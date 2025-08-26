@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Grocery Store Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'roboto': ['Roboto', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#e3f2fd',
+                            100: '#bbdefb',
+                            500: '#1976d2',
+                            600: '#1565c0',
+                            700: '#0d47a1'
+                        },
+                        secondary: {
+                            500: '#dc004e',
+                            600: '#c5043d'
+                        }
+                    },
+                    boxShadow: {
+                        'material': '0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12)',
+                        'material-lg': '0 8px 10px -5px rgba(0, 0, 0, 0.2), 0 16px 24px 2px rgba(0, 0, 0, 0.14), 0 6px 30px 5px rgba(0, 0, 0, 0.12)'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        .material-elevation-1 { box-shadow: 0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 1px 3px 0 rgba(0,0,0,.12); }
+        .material-elevation-2 { box-shadow: 0 3px 1px -2px rgba(0,0,0,.2), 0 2px 2px 0 rgba(0,0,0,.14), 0 1px 5px 0 rgba(0,0,0,.12); }
+        .material-elevation-4 { box-shadow: 0 2px 4px -1px rgba(0,0,0,.2), 0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12); }
+        .material-elevation-8 { box-shadow: 0 5px 5px -3px rgba(0,0,0,.2), 0 8px 10px 1px rgba(0,0,0,.14), 0 3px 14px 2px rgba(0,0,0,.12); }
+        
+        .ripple {
+            position: relative;
+            overflow: hidden;
+            transform: translate3d(0, 0, 0);
+        }
+        
+        .nav-item {
+            transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(25, 118, 210, 0.08);
+        }
+        
+        .nav-item.active {
+            background-color: rgba(25, 118, 210, 0.12);
+            border-right: 3px solid #1976d2;
+        }
+        
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 10px -5px rgba(0,0,0,.2), 0 16px 24px 2px rgba(0,0,0,.14), 0 6px 30px 5px rgba(0,0,0,.12);
+        }
+        
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-active { background-color: #e8f5e8; color: #2e7d32; }
+        .status-pending { background-color: #fff3e0; color: #ef6c00; }
+        .status-delivered { background-color: #e3f2fd; color: #1976d2; }
+        .status-low-stock { background-color: #ffebee; color: #d32f2f; }
+    </style>
+</head>
+<body class="bg-gray-50 font-roboto">
+    <!-- Navigation Sidebar -->
+    <div class="fixed inset-y-0 left-0 w-64 bg-white material-elevation-4 z-50">
+        <div class="flex items-center justify-center h-16 bg-primary-500 text-white">
+            <span class="material-icons mr-2">store</span>
+            <h1 class="text-lg font-medium">Admin Dashboard</h1>
+        </div>
+        
+        <nav class="mt-8">
+            <div class="px-4 space-y-2">
+                <!-- @COMPONENT: NavigationItem [active, icon, label, onClick] -->
+                <div class="nav-item active flex items-center px-4 py-3 text-gray-700 rounded-lg cursor-pointer">
+                    <span class="material-icons mr-3">dashboard</span>
+                    <span class="font-medium">Dashboard</span>
+                </div>
+                <!-- @END_COMPONENT: NavigationItem -->
+                
+                <div class="nav-item flex items-center px-4 py-3 text-gray-700 rounded-lg cursor-pointer">
+                    <span class="material-icons mr-3">inventory</span>
+                    <span class="font-medium">Products</span>
+                </div>
+                
+                <div class="nav-item flex items-center px-4 py-3 text-gray-700 rounded-lg cursor-pointer">
+                    <span class="material-icons mr-3">trending_down</span>
+                    <span class="font-medium">Stock Management</span>
+                </div>
+                
+                <div class="nav-item flex items-center px-4 py-3 text-gray-700 rounded-lg cursor-pointer">
+                    <span class="material-icons mr-3">local_offer</span>
+                    <span class="font-medium">Coupons</span>
+                </div>
+                
+                <div class="nav-item flex items-center px-4 py-3 text-gray-700 rounded-lg cursor-pointer">
+                    <span class="material-icons mr-3">shopping_cart</span>
+                    <span class="font-medium">Orders</span>
+                </div>
+                
+                <div class="nav-item flex items-center px-4 py-3 text-gray-700 rounded-lg cursor-pointer">
+                    <span class="material-icons mr-3">people</span>
+                    <span class="font-medium">Customers</span>
+                </div>
+                
+                <div class="nav-item flex items-center px-4 py-3 text-gray-700 rounded-lg cursor-pointer">
+                    <span class="material-icons mr-3">settings</span>
+                    <span class="font-medium">Store Settings</span>
+                </div>
+            </div>
+            
+            <div class="absolute bottom-4 left-4 right-4">
+                <div class="flex items-center px-4 py-3 text-gray-700 rounded-lg cursor-pointer border-t border-gray-200">
+                    <span class="material-icons mr-3">logout</span>
+                    <span class="font-medium">Logout</span>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 flex-1">
+        <!-- Header -->
+        <header class="bg-white material-elevation-1 h-16 flex items-center justify-between px-6">
+            <div>
+                <h2 class="text-xl font-medium text-gray-800">Dashboard Overview</h2>
+                <p class="text-sm text-gray-600">Welcome back, Admin</p>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                    <span class="material-icons text-gray-600">notifications</span>
+                </button>
+                
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
+                        <span class="material-icons text-white text-sm">person</span>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700" data-bind="user.name">John Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="p-6">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- @COMPONENT: StatCard [title, value, icon, color, trend] -->
+                <div class="bg-white rounded-lg material-elevation-2 p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Revenue</p>
+                            <p class="text-2xl font-bold text-gray-900" data-bind="stats.revenue">$24,567</p>
+                            <p class="text-sm text-green-600 mt-1">
+                                <span class="material-icons text-xs">trending_up</span>
+                                12% from last month
+                            </p>
+                        </div>
+                        <div class="p-3 bg-green-100 rounded-full">
+                            <span class="material-icons text-green-600">attach_money</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- @END_COMPONENT: StatCard -->
+                
+                <div class="bg-white rounded-lg material-elevation-2 p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Orders</p>
+                            <p class="text-2xl font-bold text-gray-900" data-bind="stats.orders">1,234</p>
+                            <p class="text-sm text-blue-600 mt-1">
+                                <span class="material-icons text-xs">trending_up</span>
+                                8% from last month
+                            </p>
+                        </div>
+                        <div class="p-3 bg-blue-100 rounded-full">
+                            <span class="material-icons text-blue-600">shopping_cart</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg material-elevation-2 p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Customers</p>
+                            <p class="text-2xl font-bold text-gray-900" data-bind="stats.customers">8,456</p>
+                            <p class="text-sm text-purple-600 mt-1">
+                                <span class="material-icons text-xs">trending_up</span>
+                                15% from last month
+                            </p>
+                        </div>
+                        <div class="p-3 bg-purple-100 rounded-full">
+                            <span class="material-icons text-purple-600">people</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg material-elevation-2 p-6 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Low Stock Items</p>
+                            <p class="text-2xl font-bold text-gray-900" data-bind="stats.lowStock">23</p>
+                            <p class="text-sm text-red-600 mt-1">
+                                <span class="material-icons text-xs">warning</span>
+                                Needs attention
+                            </p>
+                        </div>
+                        <div class="p-3 bg-red-100 rounded-full">
+                            <span class="material-icons text-red-600">inventory</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Recent Orders -->
+                <div class="lg:col-span-2 bg-white rounded-lg material-elevation-2 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Recent Orders</h3>
+                        <button class="text-primary-500 text-sm font-medium hover:text-primary-600 transition-colors">
+                            View All
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b border-gray-200">
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Order ID</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Customer</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Amount</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Status</th>
+                                    <th class="text-left py-3 px-4 font-medium text-gray-700">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- @MAP: orders.map(order => ( -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50" data-mock="true">
+                                    <td class="py-3 px-4 text-sm font-medium text-primary-500">#ORD-001</td>
+                                    <td class="py-3 px-4 text-sm text-gray-900">John Smith</td>
+                                    <td class="py-3 px-4 text-sm text-gray-900">$156.78</td>
+                                    <td class="py-3 px-4">
+                                        <span class="status-chip status-delivered">Delivered</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-gray-600">2024-01-15</td>
+                                </tr>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50" data-mock="true">
+                                    <td class="py-3 px-4 text-sm font-medium text-primary-500">#ORD-002</td>
+                                    <td class="py-3 px-4 text-sm text-gray-900">Sarah Johnson</td>
+                                    <td class="py-3 px-4 text-sm text-gray-900">$89.45</td>
+                                    <td class="py-3 px-4">
+                                        <span class="status-chip status-pending">Processing</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-gray-600">2024-01-15</td>
+                                </tr>
+                                <tr class="border-b border-gray-100 hover:bg-gray-50" data-mock="true">
+                                    <td class="py-3 px-4 text-sm font-medium text-primary-500">#ORD-003</td>
+                                    <td class="py-3 px-4 text-sm text-gray-900">Mike Wilson</td>
+                                    <td class="py-3 px-4 text-sm text-gray-900">$234.90</td>
+                                    <td class="py-3 px-4">
+                                        <span class="status-chip status-active">Shipped</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-sm text-gray-600">2024-01-14</td>
+                                </tr>
+                                <!-- @END_MAP )) -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Quick Actions & Low Stock Alert -->
+                <div class="space-y-6">
+                    <!-- Quick Actions -->
+                    <div class="bg-white rounded-lg material-elevation-2 p-6">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button class="w-full flex items-center justify-between p-3 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors text-primary-700">
+                                <div class="flex items-center">
+                                    <span class="material-icons mr-3">add</span>
+                                    <span class="font-medium">Add Product</span>
+                                </div>
+                                <span class="material-icons">chevron_right</span>
+                            </button>
+                            
+                            <button class="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors text-green-700">
+                                <div class="flex items-center">
+                                    <span class="material-icons mr-3">local_offer</span>
+                                    <span class="font-medium">Create Coupon</span>
+                                </div>
+                                <span class="material-icons">chevron_right</span>
+                            </button>
+                            
+                            <button class="w-full flex items-center justify-between p-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors text-orange-700">
+                                <div class="flex items-center">
+                                    <span class="material-icons mr-3">assessment</span>
+                                    <span class="font-medium">View Reports</span>
+                                </div>
+                                <span class="material-icons">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Low Stock Alert -->
+                    <div class="bg-white rounded-lg material-elevation-2 p-6">
+                        <div class="flex items-center mb-4">
+                            <span class="material-icons text-red-500 mr-2">warning</span>
+                            <h3 class="text-lg font-medium text-gray-900">Low Stock Alert</h3>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <!-- @MAP: lowStockItems.map(item => ( -->
+                            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg" data-mock="true">
+                                <div>
+                                    <p class="font-medium text-gray-900">Organic Apples</p>
+                                    <p class="text-sm text-red-600">Only 5 left</p>
+                                </div>
+                                <button class="text-primary-500 text-sm font-medium hover:text-primary-600">
+                                    Restock
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg" data-mock="true">
+                                <div>
+                                    <p class="font-medium text-gray-900">Whole Milk</p>
+                                    <p class="text-sm text-red-600">Only 8 left</p>
+                                </div>
+                                <button class="text-primary-500 text-sm font-medium hover:text-primary-600">
+                                    Restock
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg" data-mock="true">
+                                <div>
+                                    <p class="font-medium text-gray-900">Brown Bread</p>
+                                    <p class="text-sm text-red-600">Only 3 left</p>
+                                </div>
+                                <button class="text-primary-500 text-sm font-medium hover:text-primary-600">
+                                    Restock
+                                </button>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Management Section -->
+            <div class="mt-8 bg-white rounded-lg material-elevation-2 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-medium text-gray-900">Product Management</h3>
+                    <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors ripple">
+                        <span class="material-icons mr-2">add</span>
+                        Add Product
+                    </button>
+                </div>
+                
+                <!-- Product Management Controls -->
+                <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                    <div class="flex-1">
+                        <div class="relative">
+                            <span class="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">search</span>
+                            <input type="text" placeholder="Search products..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+                            <option>All Categories</option>
+                            <option data-mock="true">Fruits & Vegetables</option>
+                            <option data-mock="true">Dairy & Eggs</option>
+                            <option data-mock="true">Bakery</option>
+                        </select>
+                        <button class="p-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            <span class="material-icons">filter_list</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Products Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- @COMPONENT: ProductCard [product, onEdit, onDelete] -->
+                    <!-- @MAP: products.map(product => ( -->
+                    <div class="bg-gray-50 rounded-lg p-4 hover:shadow-lg transition-shadow" data-mock="true">
+                        <!-- Fresh organic bananas on a kitchen counter -->
+                        <img src="https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200" alt="Organic Bananas" class="w-full h-32 object-cover rounded-lg mb-3">
+                        
+                        <div class="space-y-2">
+                            <h4 class="font-medium text-gray-900">Organic Bananas</h4>
+                            <p class="text-sm text-gray-600">Category: Fruits</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary-500">$2.99</span>
+                                <span class="status-chip status-active">In Stock: 45</span>
+                            </div>
+                            
+                            <!-- Barcode Display -->
+                            <div class="bg-white p-2 rounded border mt-3">
+                                <p class="text-xs text-gray-600 mb-1">Barcode:</p>
+                                <div class="flex items-center justify-center bg-gray-100 h-8 rounded">
+                                    <span class="text-xs font-mono" data-bind="product.barcode">||||| |||| |||||</span>
+                                </div>
+                                <p class="text-xs text-center text-gray-500 mt-1" data-bind="product.sku">SKU: BAN001</p>
+                            </div>
+                            
+                            <div class="flex gap-2 mt-3">
+                                <button class="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-1 px-3 rounded text-sm transition-colors">
+                                    Edit
+                                </button>
+                                <button class="flex-1 bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm transition-colors">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 hover:shadow-lg transition-shadow" data-mock="true">
+                        <!-- Fresh milk in glass bottles -->
+                        <img src="https://images.unsplash.com/photo-1550583724-b2692b85b150?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200" alt="Whole Milk" class="w-full h-32 object-cover rounded-lg mb-3">
+                        
+                        <div class="space-y-2">
+                            <h4 class="font-medium text-gray-900">Whole Milk (1L)</h4>
+                            <p class="text-sm text-gray-600">Category: Dairy</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary-500">$3.49</span>
+                                <span class="status-chip status-low-stock">Low: 8</span>
+                            </div>
+                            
+                            <div class="bg-white p-2 rounded border mt-3">
+                                <p class="text-xs text-gray-600 mb-1">Barcode:</p>
+                                <div class="flex items-center justify-center bg-gray-100 h-8 rounded">
+                                    <span class="text-xs font-mono" data-bind="product.barcode">|||| ||||| ||||</span>
+                                </div>
+                                <p class="text-xs text-center text-gray-500 mt-1" data-bind="product.sku">SKU: MLK001</p>
+                            </div>
+                            
+                            <div class="flex gap-2 mt-3">
+                                <button class="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-1 px-3 rounded text-sm transition-colors">
+                                    Edit
+                                </button>
+                                <button class="flex-1 bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm transition-colors">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 hover:shadow-lg transition-shadow" data-mock="true">
+                        <!-- Artisan bread loaves on bakery shelf -->
+                        <img src="https://images.unsplash.com/photo-1549931319-a545dcf3bc73?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&h=200" alt="Whole Wheat Bread" class="w-full h-32 object-cover rounded-lg mb-3">
+                        
+                        <div class="space-y-2">
+                            <h4 class="font-medium text-gray-900">Whole Wheat Bread</h4>
+                            <p class="text-sm text-gray-600">Category: Bakery</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary-500">$4.99</span>
+                                <span class="status-chip status-active">In Stock: 22</span>
+                            </div>
+                            
+                            <div class="bg-white p-2 rounded border mt-3">
+                                <p class="text-xs text-gray-600 mb-1">Barcode:</p>
+                                <div class="flex items-center justify-center bg-gray-100 h-8 rounded">
+                                    <span class="text-xs font-mono" data-bind="product.barcode">||||| |||| |||||</span>
+                                </div>
+                                <p class="text-xs text-center text-gray-500 mt-1" data-bind="product.sku">SKU: BRD001</p>
+                            </div>
+                            
+                            <div class="flex gap-2 mt-3">
+                                <button class="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-1 px-3 rounded text-sm transition-colors">
+                                    Edit
+                                </button>
+                                <button class="flex-1 bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm transition-colors">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-4 hover:shadow-lg transition-shadow" data-mock="true">
+                        <!-- Organic carrots with green tops -->
+                        <img src="https://pixabay.com/get/gc3057d8b363e87a459bfce583f5299271ec20cda51603129f43319dcd66a27bd8b9dbe44764985bdb3d5a6d7670f39d23ef3fc398c2fc3338d698a5830c442d1_1280.jpg" alt="Organic Carrots" class="w-full h-32 object-cover rounded-lg mb-3">
+                        
+                        <div class="space-y-2">
+                            <h4 class="font-medium text-gray-900">Organic Carrots (1kg)</h4>
+                            <p class="text-sm text-gray-600">Category: Vegetables</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg font-bold text-primary-500">$1.99</span>
+                                <span class="status-chip status-active">In Stock: 67</span>
+                            </div>
+                            
+                            <div class="bg-white p-2 rounded border mt-3">
+                                <p class="text-xs text-gray-600 mb-1">Barcode:</p>
+                                <div class="flex items-center justify-center bg-gray-100 h-8 rounded">
+                                    <span class="text-xs font-mono" data-bind="product.barcode">|||| |||| |||||</span>
+                                </div>
+                                <p class="text-xs text-center text-gray-500 mt-1" data-bind="product.sku">SKU: CAR001</p>
+                            </div>
+                            
+                            <div class="flex gap-2 mt-3">
+                                <button class="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-1 px-3 rounded text-sm transition-colors">
+                                    Edit
+                                </button>
+                                <button class="flex-1 bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm transition-colors">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                    <!-- @END_COMPONENT: ProductCard -->
+                </div>
+            </div>
+
+            <!-- Coupon Management Section -->
+            <div class="mt-8 bg-white rounded-lg material-elevation-2 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-medium text-gray-900">Active Coupons</h3>
+                    <button class="bg-secondary-500 hover:bg-secondary-600 text-white px-4 py-2 rounded-lg flex items-center transition-colors ripple">
+                        <span class="material-icons mr-2">add</span>
+                        Create Coupon
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- @COMPONENT: CouponCard [coupon, onEdit, onDelete] -->
+                    <!-- @MAP: coupons.map(coupon => ( -->
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">SAVE20</span>
+                            <span class="text-sm text-gray-500">Active</span>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-2">20% Off Everything</h4>
+                        <div class="space-y-1 text-sm text-gray-600">
+                            <p>Discount: 20%</p>
+                            <p>Used: 45/100</p>
+                            <p>Expires: 2024-02-28</p>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button class="flex-1 text-primary-500 border border-primary-500 py-1 px-3 rounded text-sm hover:bg-primary-50 transition-colors">
+                                Edit
+                            </button>
+                            <button class="flex-1 text-red-500 border border-red-500 py-1 px-3 rounded text-sm hover:bg-red-50 transition-colors">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">WELCOME10</span>
+                            <span class="text-sm text-gray-500">Active</span>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-2">Welcome Discount</h4>
+                        <div class="space-y-1 text-sm text-gray-600">
+                            <p>Discount: 10%</p>
+                            <p>Used: 23/50</p>
+                            <p>Expires: 2024-03-15</p>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button class="flex-1 text-primary-500 border border-primary-500 py-1 px-3 rounded text-sm hover:bg-primary-50 transition-colors">
+                                Edit
+                            </button>
+                            <button class="flex-1 text-red-500 border border-red-500 py-1 px-3 rounded text-sm hover:bg-red-50 transition-colors">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow" data-mock="true">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">BULK15</span>
+                            <span class="text-sm text-orange-500">Expiring Soon</span>
+                        </div>
+                        <h4 class="font-medium text-gray-900 mb-2">Bulk Purchase Discount</h4>
+                        <div class="space-y-1 text-sm text-gray-600">
+                            <p>Discount: 15%</p>
+                            <p>Used: 8/30</p>
+                            <p>Expires: 2024-01-25</p>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button class="flex-1 text-primary-500 border border-primary-500 py-1 px-3 rounded text-sm hover:bg-primary-50 transition-colors">
+                                Edit
+                            </button>
+                            <button class="flex-1 text-red-500 border border-red-500 py-1 px-3 rounded text-sm hover:bg-red-50 transition-colors">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                    <!-- @END_MAP )) -->
+                    <!-- @END_COMPONENT: CouponCard -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="fixed bottom-6 right-6 w-14 h-14 bg-secondary-500 hover:bg-secondary-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-40">
+        <span class="material-icons">add</span>
+    </button>
+
+    <script>
+        (function() {
+            // TODO: Implement business logic, API calls, or state management
+            
+            // Navigation handling
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                    // TODO: Handle navigation state and content switching
+                });
+            });
+            
+            // Search functionality placeholder
+            const searchInput = document.querySelector('input[type="text"]');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    // TODO: Implement product search functionality
+                    console.log('Search query:', this.value);
+                });
+            }
+            
+            // Quick action buttons
+            const quickActionButtons = document.querySelectorAll('.bg-primary-50, .bg-green-50, .bg-orange-50');
+            quickActionButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // TODO: Handle quick action clicks
+                    console.log('Quick action clicked');
+                });
+            });
+            
+            // Product card interactions
+            const productCards = document.querySelectorAll('.bg-gray-50');
+            productCards.forEach(card => {
+                const editBtn = card.querySelector('.bg-primary-500');
+                const deleteBtn = card.querySelector('.bg-red-500');
+                
+                if (editBtn) {
+                    editBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        // TODO: Open edit product modal
+                        console.log('Edit product clicked');
+                    });
+                }
+                
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        // TODO: Show delete confirmation dialog
+                        console.log('Delete product clicked');
+                    });
+                }
+            });
+            
+            // Ripple effect for buttons
+            const rippleButtons = document.querySelectorAll('.ripple');
+            rippleButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.width = ripple.style.height = size + 'px';
+                    ripple.style.left = x + 'px';
+                    ripple.style.top = y + 'px';
+                    ripple.classList.add('ripple-effect');
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+            
+            // Add CSS for ripple effect
+            const style = document.createElement('style');
+            style.textContent = `
+                .ripple-effect {
+                    position: absolute;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.3);
+                    transform: scale(0);
+                    animation: ripple-animation 0.6s linear;
+                    pointer-events: none;
+                }
+                
+                @keyframes ripple-animation {
+                    to {
+                        transform: scale(4);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        })();
+    </script>
+</body>
+</html>

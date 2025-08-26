@@ -1,9 +1,10 @@
-import { useAuth } from "@/hooks/use-auth.jsx";
+import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 
 const menuItems = [
   { path: "/", icon: "dashboard", label: "Dashboard" },
   { path: "/products", icon: "inventory", label: "Products" },
+  { path: "/categories", icon: "category", label: "Categories" },
   { path: "/stock", icon: "trending_down", label: "Stock Management" },
   { path: "/coupons", icon: "local_offer", label: "Coupons" },
   { path: "/orders", icon: "shopping_cart", label: "Orders" },
@@ -23,7 +24,7 @@ export default function Sidebar() {
     <div className="fixed inset-y-0 left-0 w-64 bg-white material-elevation-4 z-50">
       <div className="flex items-center justify-center h-16 bg-primary-500 text-white">
         <span className="material-icons mr-2">store</span>
-        <h1 className="text-lg font-medium">Admin Dashboard</h1>
+        <h1 className="text-lg font-medium">SHIS Dashboard</h1>
       </div>
       
       <nav className="mt-8">

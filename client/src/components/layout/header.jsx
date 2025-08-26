@@ -1,4 +1,4 @@
-import { useAuth } from "@/hooks/use-auth.jsx";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Header({ title, subtitle }) {
   const { user } = useAuth();

@@ -4,7 +4,6 @@ export default function StatCard({ title, value, icon, color, trend, isWarning }
     blue: "bg-blue-100 text-blue-600",
     purple: "bg-purple-100 text-purple-600",
     red: "bg-red-100 text-red-600",
-    orange: "bg-orange-100 text-orange-600",
   };
 
   const trendColorClasses = {
@@ -12,7 +11,6 @@ export default function StatCard({ title, value, icon, color, trend, isWarning }
     blue: "text-blue-600",
     purple: "text-purple-600",
     red: "text-red-600",
-    orange: "text-orange-600",
   };
 
   return (

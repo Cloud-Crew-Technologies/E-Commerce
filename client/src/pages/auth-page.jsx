@@ -1,21 +1,31 @@
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth.jsx";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
+import axios from "axios";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const [, setLocation] = useLocation();
-  
-  const [loginData, setLoginData] = useState({ username: "", password: "" });
-  const [registerData, setRegisterData] = useState({ username: "", password: "", confirmPassword: "" });
 
-  // Redirect if already logged in
+  const [loginData, setLoginData] = useState({ username: "", password: "" });
+  const [registerData, setRegisterData] = useState({
+    username: "",
+    password: "",
+    confirmPassword: "",
+  });
+
   if (user) {
     setLocation("/");
     return null;
@@ -24,7 +34,11 @@ export default function AuthPage() {
   const handleLogin = (e) => {
     e.preventDefault();
     loginMutation.mutate(loginData, {
-      onSuccess: () => setLocation("/")
+      onSuccess: () => setLocation("/"),
+      onError: (error) => {
+        console.error('Login error:', error);
+        alert(error.message || "Login failed. Please check your credentials.");
+      },
     });
   };
 
@@ -33,26 +47,37 @@ export default function AuthPage() {
     if (registerData.password !== registerData.confirmPassword) {
       return;
     }
-    registerMutation.mutate({
-      username: registerData.username,
-      password: registerData.password,
-      role: "admin"
-    }, {
-      onSuccess: () => setLocation("/")
-    });
+    axios
+      .post("http://localhost:3000/api/users/create", {
+        username: registerData.username,
+        password: registerData.password,
+        role: "admin",
+      })
+      .then(() => {
+        setLocation("/");
+      })
+      .catch((error) => {
+        console.error("Registration failed:", error);
+        alert("Registration failed. Please try again.");
+      });
   };
 
   return (
     <div className="min-h-screen bg-grey-50 flex">
-      {/* Left side - Auth forms */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center mb-4">
-              <span className="material-icons text-primary-500 text-4xl mr-2">store</span>
-              <h1 className="text-2xl font-bold text-grey-900">Admin Dashboard</h1>
+              <span className="material-icons text-primary-500 text-4xl mr-2">
+                store
+              </span>
+              <h1 className="text-2xl font-bold text-grey-900">
+                Admin Dashboard
+              </h1>
             </div>
-            <p className="text-grey-600">Access your grocery store management system</p>
+            <p className="text-grey-600">
+              Access your grocery store management system
+            </p>
           </div>
 
           <Tabs defaultValue="login" className="w-full">
@@ -60,7 +85,7 @@ export default function AuthPage() {
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="login">
               <Card>
                 <CardHeader>
@@ -78,7 +103,12 @@ export default function AuthPage() {
                         type="text"
                         placeholder="Enter your username"
                         value={loginData.username}
-                        onChange={(e) => setLoginData({ ...loginData, username: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({
+                            ...loginData,
+                            username: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
@@ -89,19 +119,24 @@ export default function AuthPage() {
                         type="password"
                         placeholder="Enter your password"
                         value={loginData.password}
-                        onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                        onChange={(e) =>
+                          setLoginData({
+                            ...loginData,
+                            password: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full bg-primary-500 hover:bg-primary-600"
                       disabled={loginMutation.isPending}
                     >
                       {loginMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Signing In...
+                          Signing in...
                         </>
                       ) : (
                         "Sign In"
@@ -111,14 +146,12 @@ export default function AuthPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="register">
               <Card>
                 <CardHeader>
                   <CardTitle>Register</CardTitle>
-                  <CardDescription>
-                    Create a new admin account
-                  </CardDescription>
+                  <CardDescription>Create a new admin account</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleRegister} className="space-y-4">
@@ -129,7 +162,12 @@ export default function AuthPage() {
                         type="text"
                         placeholder="Choose a username"
                         value={registerData.username}
-                        onChange={(e) => setRegisterData({ ...registerData, username: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            username: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
@@ -138,9 +176,14 @@ export default function AuthPage() {
                       <Input
                         id="reg-password"
                         type="password"
-                        placeholder="Choose a password"
+                        placeholder="Create a password"
                         value={registerData.password}
-                        onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            password: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
@@ -151,19 +194,24 @@ export default function AuthPage() {
                         type="password"
                         placeholder="Confirm your password"
                         value={registerData.confirmPassword}
-                        onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                        onChange={(e) =>
+                          setRegisterData({
+                            ...registerData,
+                            confirmPassword: e.target.value,
+                          })
+                        }
                         required
                       />
                     </div>
                     <Button
                       type="submit"
-                      className="w-full"
-                      disabled={registerMutation.isPending || registerData.password !== registerData.confirmPassword}
+                      className="w-full bg-primary-500 hover:bg-primary-600"
+                      disabled={registerMutation.isPending}
                     >
                       {registerMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating Account...
+                          Creating account...
                         </>
                       ) : (
                         "Create Account"
@@ -177,22 +225,30 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Right side - Hero section */}
-      <div className="hidden lg:flex flex-1 bg-primary-600 items-center justify-center p-12">
-        <div className="text-center text-white max-w-md">
-          <span className="material-icons text-8xl mb-6 block">dashboard</span>
+      <div className="hidden lg:flex flex-1 bg-primary-500 text-white p-8 items-center justify-center">
+        <div className="text-center max-w-md">
+          <span className="material-icons text-6xl mb-6 block">dashboard</span>
           <h2 className="text-3xl font-bold mb-4">Grocery Store Management</h2>
-          <p className="text-primary-100 text-lg leading-relaxed">
-            Comprehensive admin dashboard for managing products, inventory, orders, customers, and store settings with Material Design interface.
+          <p className="text-primary-100 text-lg mb-6">
+            Manage your products, track inventory, handle orders, and grow your
+            business with our comprehensive admin dashboard.
           </p>
-          <div className="mt-8 grid grid-cols-2 gap-4 text-sm">
-            <div className="flex flex-col items-center p-4 bg-primary-700 rounded-lg">
-              <span className="material-icons text-2xl mb-2">inventory_2</span>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="bg-primary-600 rounded-lg p-4">
+              <span className="material-icons block mb-2">inventory</span>
               <span>Product Management</span>
             </div>
-            <div className="flex flex-col items-center p-4 bg-primary-700 rounded-lg">
-              <span className="material-icons text-2xl mb-2">bar_chart</span>
-              <span>Analytics</span>
+            <div className="bg-primary-600 rounded-lg p-4">
+              <span className="material-icons block mb-2">trending_up</span>
+              <span>Sales Analytics</span>
+            </div>
+            <div className="bg-primary-600 rounded-lg p-4">
+              <span className="material-icons block mb-2">people</span>
+              <span>Customer Management</span>
+            </div>
+            <div className="bg-primary-600 rounded-lg p-4">
+              <span className="material-icons block mb-2">local_offer</span>
+              <span>Coupon System</span>
             </div>
           </div>
         </div>
