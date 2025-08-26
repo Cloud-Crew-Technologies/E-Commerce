@@ -3,8 +3,9 @@ import { useLocation } from "wouter";
 
 const menuItems = [
   { path: "/", icon: "dashboard", label: "Dashboard" },
-  { path: "/products", icon: "inventory", label: "Products" },
   { path: "/categories", icon: "category", label: "Categories" },
+  { path: "/types", icon: "format_list_bulleted", label: "Type" },
+  { path: "/products", icon: "inventory", label: "Products" },
   { path: "/stock", icon: "trending_down", label: "Stock Management" },
   { path: "/coupons", icon: "local_offer", label: "Coupons" },
   { path: "/orders", icon: "shopping_cart", label: "Orders" },

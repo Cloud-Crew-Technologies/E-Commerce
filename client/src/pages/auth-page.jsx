@@ -24,6 +24,10 @@ export default function AuthPage() {
     username: "",
     password: "",
     confirmPassword: "",
+    storeName: "",
+    storeaddress: "",
+    mobileNumber: "",
+    email: "",
   });
 
   if (user) {
@@ -36,10 +40,23 @@ export default function AuthPage() {
     loginMutation.mutate(loginData, {
       onSuccess: () => setLocation("/"),
       onError: (error) => {
-        console.error('Login error:', error);
+        console.error("Login error:", error);
         alert(error.message || "Login failed. Please check your credentials.");
       },
     });
+    axios
+      .get(`http://localhost:3000/api/users/${loginData.username}`)
+      .then((response) => {
+        const userData = response.data.data;
+        console.log("User data details:", userData); // Debug log to see exact data structure
+        sessionStorage.setItem("name", loginData.username);
+        sessionStorage.setItem(
+          "storename",
+          userData.storename || userData.storeName
+        );
+        console.log("Stored name:", sessionStorage.getItem("name"));
+        console.log("Stored storename:", sessionStorage.getItem("storename"));
+      });
   };
 
   const handleRegister = (e) => {
@@ -51,6 +68,7 @@ export default function AuthPage() {
       .post("http://localhost:3000/api/users/create", {
         username: registerData.username,
         password: registerData.password,
+        storeName: registerData.storeName,
         role: "admin",
       })
       .then(() => {
@@ -59,6 +77,17 @@ export default function AuthPage() {
       .catch((error) => {
         console.error("Registration failed:", error);
         alert("Registration failed. Please try again.");
+      });
+    axios
+      .post("http://localhost:3000/api/store-settings/create", {
+        storeName: registerData.storeName,
+        description: "",
+        address: registerData.storeaddress,
+        contactEmail: registerData.email,
+        contactPhone: registerData.mobileNumber,
+      })
+      .then(() => {
+        console.log("stored");
       });
   };
 
@@ -202,6 +231,78 @@ export default function AuthPage() {
                         }
                         required
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-grey-600">
+                        Store Name
+                        <Input
+                          id="Store Name"
+                          type="text"
+                          placeholder="Store Name"
+                          value={registerData.storeName}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              storeName: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </Label>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-grey-600">
+                        Store Address
+                        <Input
+                          id="Store Address"
+                          type="text"
+                          placeholder="Store Address"
+                          value={registerData.storeaddress}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              storeaddress: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </Label>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-grey-600">
+                        Mobile Number
+                        <Input
+                          id="Mobile Number"
+                          type="text"
+                          placeholder="Mobile Number"
+                          value={registerData.mobileNumber}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              mobileNumber: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </Label>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm text-grey-600">
+                        Email
+                        <Input
+                          id="Email"
+                          type="text"
+                          placeholder="Email"
+                          value={registerData.email}
+                          onChange={(e) =>
+                            setRegisterData({
+                              ...registerData,
+                              email: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                      </Label>
                     </div>
                     <Button
                       type="submit"

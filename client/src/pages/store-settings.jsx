@@ -1,81 +1,137 @@
-import { useEffect } from "react"
-import { useQuery, useMutation } from "@tanstack/react-query"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import Sidebar from "@/components/layout/sidebar"
-import Header from "@/components/layout/header"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { apiRequest, queryClient } from "@/lib/queryClient"
-import { useToast } from "@/hooks/use-toast"
-import { insertStoreSettingsSchema } from "@shared/schema"
+import { useEffect, useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Sidebar from "@/components/layout/sidebar";
+import Header from "@/components/layout/header";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { insertStoreSettingsSchema } from "@shared/schema";
+import axios from "axios";
 
 export default function StoreSettings() {
-  const { toast } = useToast()
-
-  const { data: settings, isLoading } = useQuery({ queryKey: ["/api/store-settings"] })
+  const { toast } = useToast();
+  const storename = sessionStorage.getItem("storename");
+  const [settings, setSettings] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  // const { data: settings, isLoading } = useQuery({ queryKey: [`/api/store-settings/${storename}`] })
 
   const form = useForm({
     resolver: zodResolver(insertStoreSettingsSchema),
     defaultValues: {
-      storeName: "",
+      storeName: settings?.storeName||"",
       description: "",
       contactEmail: "",
       contactPhone: "",
       address: "",
     },
-  })
-
+  });
   useEffect(() => {
-    if (settings) {
-      form.reset({
-        storeName: settings.storeName || "",
-        description: settings.description || "",
-        contactEmail: settings.contactEmail || "",
-        contactPhone: settings.contactPhone || "",
-        address: settings.address || "",
-      })
+    fetchSettings();
+  }, []); 
+
+  const fetchSettings = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.get(
+        `http://localhost:3000/api/store-settings/get/${storename}`
+      );
+
+      if (response.data.success && response.data.data) {
+        const settingsData = response.data.data;
+        setSettings(settingsData);
+
+        // Update form with the fetched values
+        form.reset({
+          storeName: settingsData.storeName || "",
+          description: settingsData.description || "",
+          contactEmail: settingsData.contactEmail || "",
+          contactPhone: settingsData.contactPhone || "",
+          address: settingsData.address || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      setSettings(null);
+      toast({
+        title: "Error", 
+        description: "Failed to load store settings",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-  }, [settings, form])
+  };
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data) => {
-      const response = await apiRequest("POST", "/api/store-settings", data)
-      return await response.json()
+      const response = await apiRequest(
+        "PUT",
+        `/api/store-settings/put/${settings._id}`,
+        data
+      );
+      return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/store-settings"] })
-      toast({ title: "Settings updated", description: "Store settings have been successfully updated." })
+      queryClient.invalidateQueries({ queryKey: ["/api/store-settings"] });
+      toast({
+        title: "Settings updated",
+        description: "Store settings have been successfully updated.",
+      });
     },
     onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
-  })
+  });
 
   const onSubmit = (data) => {
-    updateSettingsMutation.mutate(data)
-  }
+    updateSettingsMutation.mutate(data);
+  };
 
   return (
-    <div className="flex min-h-screen bg-grey-50">
+    <div className="flex min-l-screen bg-grey-50">
       <Sidebar />
-      <div className="ml-64 flex-1">
-        <Header title="Store Settings" subtitle="Configure your store information and preferences" />
-        <main className="p-6 max-w-4xl">
-          <div className="space-y-6">
-            <Card className="material-elevation-2">
+      <div className="ml-64 flex-1 ">
+        <Header
+          title="Store Settings"
+          subtitle="Configure your store information and preferences"
+        />
+        <main className="p-6 max-w-9xl ">
+          <div className="space-y-6 ">
+            <Card className="material-elevation-2 bg-lightblue-50">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <span className="material-icons mr-2">store</span>
                   Store Information
                 </CardTitle>
-                <CardDescription>Basic information about your grocery store</CardDescription>
+                <CardDescription>
+                  Basic information about your grocery store
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -91,7 +147,10 @@ export default function StoreSettings() {
                   </div>
                 ) : (
                   <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <form
+                      onSubmit={form.handleSubmit(onSubmit)}
+                      className="space-y-6"
+                    >
                       <FormField
                         control={form.control}
                         name="storeName"
@@ -99,7 +158,11 @@ export default function StoreSettings() {
                           <FormItem>
                             <FormLabel>Store Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="Enter your store name" {...field} />
+                              <Input
+                                placeholder="Enter your store name"
+                                {...field}
+                                className="border border-grey-300 rounded-md p-2 bg-grey-50"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -113,7 +176,11 @@ export default function StoreSettings() {
                           <FormItem>
                             <FormLabel>Description</FormLabel>
                             <FormControl>
-                              <Textarea placeholder="Describe your store..." className="min-h-[100px]" {...field} />
+                              <Textarea
+                                placeholder="Describe your store..."
+                                className="min-h-[100px] border border-grey-300 rounded-md p-2 bg-grey-50"
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -124,7 +191,9 @@ export default function StoreSettings() {
 
                       <div className="space-y-4">
                         <h3 className="text-lg font-medium text-grey-900 flex items-center">
-                          <span className="material-icons mr-2">contact_mail</span>
+                          <span className="material-icons mr-2">
+                            contact_mail
+                          </span>
                           Contact Information
                         </h3>
 
@@ -136,7 +205,12 @@ export default function StoreSettings() {
                               <FormItem>
                                 <FormLabel>Contact Email</FormLabel>
                                 <FormControl>
-                                  <Input type="email" placeholder="store@example.com" {...field} />
+                                  <Input
+                                    type="email"
+                                    placeholder="store@example.com"
+                                    className="border border-grey-300 rounded-md p-2 bg-grey-50"
+                                    {...field}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -150,7 +224,12 @@ export default function StoreSettings() {
                               <FormItem>
                                 <FormLabel>Contact Phone</FormLabel>
                                 <FormControl>
-                                  <Input type="tel" placeholder="+1 (555) 123-4567" {...field} />
+                                  <Input
+                                    type="tel"
+                                    placeholder="+1 (555) 123-4567"
+                                    className="border border-grey-300 rounded-md p-2 bg-grey-50"
+                                    {...field}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -165,7 +244,11 @@ export default function StoreSettings() {
                             <FormItem>
                               <FormLabel>Store Address</FormLabel>
                               <FormControl>
-                                <Textarea placeholder="Enter your store address..." className="min-h-[80px]" {...field} />
+                                <Textarea
+                                  placeholder="Enter your store address..."
+                                  className="min-h-[80px] border border-grey-300 rounded-md p-2 bg-grey-50"
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -174,16 +257,22 @@ export default function StoreSettings() {
                       </div>
 
                       <div className="flex justify-end">
-                        <Button type="submit" className="bg-primary-500 hover:bg-primary-600" disabled={updateSettingsMutation.isPending}>
+                        <Button
+                          type="submit"
+                          className="bg-primary-500 hover:bg-primary-600"
+                          disabled={updateSettingsMutation.isPending}
+                        >
                           {updateSettingsMutation.isPending ? (
                             <>
-                              <span className="material-icons mr-2 animate-spin">refresh</span>
+                              <span className="material-icons mr-2 animate-spin">
+                                refresh
+                              </span>
                               Saving...
                             </>
                           ) : (
                             <>
                               <span className="material-icons mr-2">save</span>
-                              Save Settings
+                              Update Store
                             </>
                           )}
                         </Button>
@@ -194,67 +283,25 @@ export default function StoreSettings() {
               </CardContent>
             </Card>
 
-            <Card className="material-elevation-2">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <span className="material-icons mr-2">settings</span>
-                  System Settings
-                </CardTitle>
-                <CardDescription>Configure system-wide preferences</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Low Stock Threshold</h4>
-                      <p className="text-sm text-grey-600">Set the minimum quantity for low stock alerts</p>
-                    </div>
-                    <Input type="number" defaultValue={10} className="w-20" />
-                  </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Currency</h4>
-                      <p className="text-sm text-grey-600">Default currency for pricing</p>
-                    </div>
-                    <select className="border rounded-lg px-3 py-2">
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="GBP">GBP (£)</option>
-                      <option value="INR">INR (₹)</option>
-                      <option value="JPY">JPY (¥)</option>
-                      <option value="AUD">AUD (A$)</option>
-                      <option value="CAD">CAD (C$)</option>
-                      <option value="CNY">CNY (¥)</option>
-                      <option value="RUB">RUB (₽)</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">Tax Rate</h4>
-                      <p className="text-sm text-grey-600">Default tax rate percentage</p>
-                    </div>
-                    <Input type="number" defaultValue={8.5} step="0.1" className="w-20" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="material-elevation-2">
+            <Card className="material-elevation-2 bg-lightblue-50">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <span className="material-icons mr-2">backup</span>
                   Data Management
                 </CardTitle>
-                <CardDescription>Backup and manage your store data</CardDescription>
+                <CardDescription>
+                  Backup and manage your store data
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
                       <h4 className="font-medium">Export Data</h4>
-                      <p className="text-sm text-grey-600">Export all store data as JSON</p>
+                      <p className="text-sm text-grey-600">
+                        Export all store data as JSON
+                      </p>
                     </div>
                     <Button variant="outline">
                       <span className="material-icons mr-2">file_download</span>
@@ -265,7 +312,9 @@ export default function StoreSettings() {
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
                       <h4 className="font-medium">Generate Reports</h4>
-                      <p className="text-sm text-grey-600">Create detailed business reports</p>
+                      <p className="text-sm text-grey-600">
+                        Create detailed business reports
+                      </p>
                     </div>
                     <Button variant="outline">
                       <span className="material-icons mr-2">assessment</span>
@@ -279,5 +328,5 @@ export default function StoreSettings() {
         </main>
       </div>
     </div>
-  )
+  );
 }

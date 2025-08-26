@@ -23,7 +23,7 @@ export default function ProductCard({ product, onEdit, onDelete }) {
         <img
           src={product.imageUrl}
           alt={product.name}
-          className="w-full h-32 object-cover rounded-lg mb-3"
+          className="w-full h-40 object-cover rounded-lg mb-3"
         />
       ) : (
         <div className="w-full h-32 bg-grey-200 rounded-lg mb-3 flex items-center justify-center">
@@ -40,13 +40,7 @@ export default function ProductCard({ product, onEdit, onDelete }) {
         </div>
         
         {/* Barcode Display */}
-        <div className="bg-white p-2 rounded border mt-3">
-          <p className="text-xs text-grey-600 mb-1">Barcode:</p>
-          <div className="flex items-center justify-center bg-grey-100 h-8 rounded">
-            <span className="text-xs font-mono">{product.barcode || "||||| |||| |||||"}</span>
-          </div>
-          <p className="text-xs text-center text-grey-500 mt-1">SKU: {product.sku}</p>
-        </div>
+
         
         <div className="flex gap-2 mt-3">
           <Button

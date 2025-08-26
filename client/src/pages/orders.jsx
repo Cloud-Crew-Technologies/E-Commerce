@@ -101,7 +101,7 @@ export default function Orders() {
   const filteredOrders = orders?.filter(
     (order) =>
       order.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      order.id.toLowerCase().includes(search.toLowerCase())
+      order.id
   );
 
   return (
@@ -267,7 +267,7 @@ export default function Orders() {
                           {order.customerName}
                         </TableCell>
                         <TableCell className="font-medium">
-                          ${order.total}
+                          ₹{order.total}
                         </TableCell>
                         <TableCell className="text-grey-600">
                           {new Date(order.createdAt).toLocaleDateString()}

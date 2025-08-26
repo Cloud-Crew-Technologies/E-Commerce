@@ -14,6 +14,7 @@ import Orders from "@/pages/orders";
 import Customers from "@/pages/customers";
 import StoreSettings from "@/pages/store-settings";
 import Categories from "@/pages/categories";
+import Types from "@/pages/types";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function Router() {
@@ -27,6 +28,7 @@ function Router() {
       <ProtectedRoute path="/customers" component={Customers} />
       <ProtectedRoute path="/settings" component={StoreSettings} />
       <ProtectedRoute path="/categories" component={Categories} />
+      <ProtectedRoute path="/types" component={Types} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

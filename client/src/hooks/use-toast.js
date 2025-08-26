@@ -1,7 +1,7 @@
 import * as React from "react"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 100  // 2 seconds delay before removing the toast
+const TOAST_REMOVE_DELAY = 50  // 2 seconds delay before removing the toast
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",

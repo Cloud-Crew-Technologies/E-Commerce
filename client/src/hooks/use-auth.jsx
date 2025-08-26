@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
       setIsLoading(false);
     }
   };
-
+const names = sessionStorage.getItem("name");
   const loginMutation = useMutation({
     mutationFn: async (loginData) => {
       const response = await apiRequest("POST", "/api/users/login", loginData);

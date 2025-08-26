@@ -341,13 +341,14 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
             {/* Image Upload Section */}
             <div className="space-y-2">
-              <FormLabel>Product Image</FormLabel>
+              <FormLabel>Product Image *</FormLabel>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                 <Input
                   type="file"
                   accept="image/*"
                   onChange={handleFileSelect}
                   className="mb-2"
+                  required
                 />
 
                 {imagePreview ? (

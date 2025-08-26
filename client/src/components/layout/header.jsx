@@ -1,8 +1,10 @@
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Header({ title, subtitle }) {
+  const storename = sessionStorage.getItem("storename");
   const { user } = useAuth();
-
+  const name = sessionStorage.getItem("name");
+  console.log(storename);
   return (
     <header className="bg-white material-elevation-1 h-16 flex items-center justify-between px-6">
       <div>
@@ -20,7 +22,7 @@ export default function Header({ title, subtitle }) {
             <span className="material-icons text-white text-sm">person</span>
           </div>
           <span className="text-sm font-medium text-grey-700">
-            {user?.username || "Admin"}
+            {user?.username || name || "Admin"} - {storename || "My Store"}
           </span>
         </div>
       </div>
