@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
+import { sendEmail } from "@/lib/sendEmail";
 
 export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
@@ -57,6 +58,13 @@ export default function AuthPage() {
         console.log("Stored name:", sessionStorage.getItem("name"));
         console.log("Stored storename:", sessionStorage.getItem("storename"));
       });
+    // Send welcome email
+    sendEmail({
+      subject: "Welcome to Shop Manager",
+      text: `Welcome to Shop Manager! Your login was successful.`,
+      html: `<h1>Welcome to Shop Manager!</h1><p>Your login was successful.</p>`,
+      to: userData.email
+    }).catch(error => console.error("Failed to send welcome email:", error));
   };
 
   const handleRegister = (e) => {
