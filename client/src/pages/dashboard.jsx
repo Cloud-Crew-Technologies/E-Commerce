@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [recentOrders, setProduct] = useState([]);
   const [ordersLoading, setIsLoading] = useState(false);
+  const [value, setValue] = useState(0);
 
   useEffect(() => {
     fetchCategories();
@@ -71,7 +72,7 @@ export default function Dashboard() {
   const { data: lowStockItems, isLoading: stockLoading } = useQuery({
     queryKey: ["/api/products", "low-stock"],
   });
-
+const totalSum = recentOrders.reduce((acc, curr) => acc + curr.total, 0);
   const getStatusBadge = (status) => {
     switch (status) {
       case "delivered":
@@ -133,14 +134,14 @@ export default function Dashboard() {
               <>
                 <StatCard
                   title="Total Revenue"
-                  value={`₹${stats?.totalRevenue?.toLocaleString() || "0"}`}
+                  value={`₹${totalSum || "0"}`}
                   icon="attach_money"
                   color="green"
                   trend="+12% from last month"
                 />
                 <StatCard
                   title="Total Orders"
-                  value={stats?.totalOrders?.toLocaleString() || "0"}
+                  value={recentOrders.length || "0"}
                   icon="shopping_cart"
                   color="blue"
                   trend="+8% from last month"

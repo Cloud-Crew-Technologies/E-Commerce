@@ -63,7 +63,6 @@ export default function AuthPage() {
       subject: "Welcome to Shop Manager",
       text: `Welcome to Shop Manager! Your login was successful.`,
       html: `<h1>Welcome to Shop Manager!</h1><p>Your login was successful.</p>`,
-      to: userData.email
     }).catch(error => console.error("Failed to send welcome email:", error));
   };
 
