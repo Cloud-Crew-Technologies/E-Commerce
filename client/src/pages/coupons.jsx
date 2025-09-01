@@ -57,6 +57,7 @@ export default function Coupons() {
 
   const deleteCouponMutation = useMutation({
     mutationFn: async (couponId) => {
+      console.log(couponId);
       await apiRequest("DELETE", `/api/coupons/${couponId}`)
     },
     onSuccess: () => {
@@ -117,7 +118,7 @@ export default function Coupons() {
                   <CouponCard
                     key={coupon.id}
                     coupon={coupon}
-                    onDelete={(id) => deleteCouponMutation.mutate(id)}
+                    onDelete={() => deleteCouponMutation.mutate(coupon.id)}
                     onEdit={() => {}}
                   />
                 ))}

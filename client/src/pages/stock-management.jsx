@@ -20,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import {
   Select,
   SelectContent,
@@ -27,16 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Box,
-  Collapse,
-  Grid,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Typography,
-  Slider,
-} from "@mui/material";
+import { Typography } from "@mui/material";
 import ViewProductDialog from "@/components/products/product_details";
 import EditProductDialog from "@/components/products/Product Edit";
 
@@ -49,6 +42,8 @@ export default function StockManagement() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [categoriesData, setCategoriesData] = useState([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+
   const [filters, setFilters] = useState({
     search: "",
     category: "all",
@@ -60,7 +55,7 @@ export default function StockManagement() {
   useEffect(() => {
     fetchCategoriesData();
     fetchCategories();
-  }, []); // fixed dependency to empty array to run once on mount
+  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -91,6 +86,7 @@ export default function StockManagement() {
       setIsLoading(false);
     }
   };
+
   const fetchCategoriesData = async () => {
     try {
       setIsLoading(true);
@@ -119,8 +115,9 @@ export default function StockManagement() {
       setIsLoading(false);
     }
   };
+
   const maxPrice = Math.max(
-    ...products.map((product) => product.price || 0),
+    ...products.map((product) => product.rprice || 0),
     10000
   );
   const categories = categoriesData?.map((c) => c.name) || ["Other"];
@@ -132,8 +129,8 @@ export default function StockManagement() {
     const matchesCategory =
       filters.category === "all" || product.category === filters.category;
     const matchesPrice =
-      product.price >= filters.priceRange[0] &&
-      product.price <= filters.priceRange[1];
+      product.rprice >= filters.priceRange[0] &&
+      product.rprice <= filters.priceRange[1];
 
     // Stock level filtering
     const stockLevel = product.quantity || 0;
@@ -160,9 +157,9 @@ export default function StockManagement() {
       case "default":
         return 0;
       case "price-low":
-        return a.price - b.price;
+        return a.rprice - b.rprice;
       case "price-high":
-        return b.price - a.price;
+        return b.rprice - a.rprice;
       case "name":
         return a.name.localeCompare(b.name);
       case "rating":
@@ -229,6 +226,15 @@ export default function StockManagement() {
     setIsEditDialogOpen(true);
   };
 
+  // Save data to local storage helper
+  const saveToLocalStorage = (key, data) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (err) {
+      console.error("Failed to save data to localStorage", err);
+    }
+  };
+
   // PDF Export function using jsPDF and autotable excluding "Actions" column
   const exportPDF = () => {
     if (!filteredProducts || filteredProducts.length === 0) {
@@ -240,29 +246,30 @@ export default function StockManagement() {
       return;
     }
 
+    saveToLocalStorage("exportedInventoryData", filteredProducts);
     const doc = new jsPDF();
 
-    // Define columns to export with dataKeys and alignment
     const columns = [
+      { header: "Batch", dataKey: "batch" },
       { header: "Product", dataKey: "name" },
       { header: "Description", dataKey: "description" },
       { header: "Category", dataKey: "category" },
       { header: "Current Stock", dataKey: "quantity" },
-      { header: "Price (INR)", dataKey: "price" },
+      { header: "Retail Price", dataKey: "rprice" },
+      { header: "Whole Price", dataKey: "wprice" },
       { header: "Status", dataKey: "status" },
     ];
 
-    // Prepare row data with truncated description and INR symbol fix
-    const rows = filteredProducts.map((product) => {
-      return {
-        name: product.name,
-        description: product.description,
-        category: product.category,
-        quantity: product.quantity + " units",
-        price: `${product.price}`, // proper INR symbol
-        status: getStockStatus(product.quantity),
-      };
-    });
+    const rows = filteredProducts.map((product) => ({
+      batch: product.batch,
+      name: product.name,
+      description: product.description,
+      category: product.category,
+      quantity: product.quantity + " units",
+      rprice: `${product.rprice}`,
+      wprice: `${product.wprice}`,
+      status: getStockStatus(product.quantity),
+    }));
 
     autoTable(doc, {
       columns,
@@ -271,17 +278,50 @@ export default function StockManagement() {
       headStyles: { fillColor: [22, 160, 133] },
       startY: 20,
       columnStyles: {
-        0: { halign: "left", cellWidth: 30 }, // Product
-        1: { halign: "left", cellWidth: 50 }, // Description
-        2: { halign: "left" }, // Category
-        3: { halign: "left", cellWidth: 20 }, // Current Stock
-        4: { halign: "center" }, // Price
-        5: { halign: "left" }, // Status
+        0: { halign: "left", cellWidth: "auto" },
+        1: { halign: "left", cellWidth: "auto" },
+        2: { halign: "left", cellWidth: "auto" },
+        3: { halign: "left", cellWidth: "auto" },
+        4: { halign: "center" },
+        5: { halign: "left" },
+        6: { halign: "left" },
       },
     });
 
     doc.text("Inventory Overview", 14, 15);
     doc.save("inventory-overview.pdf");
+  };
+
+  // Excel Export function using SheetJS and file-saver
+  const exportExcel = () => {
+    if (!filteredProducts || filteredProducts.length === 0) {
+      toast({
+        title: "No data",
+        description: "No products to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    saveToLocalStorage("exportedInventoryData", filteredProducts);
+
+    const wsData = filteredProducts.map((product) => ({
+      Batch: product.batch,
+      Product: product.name,
+      Description: product.description,
+      Category: product.category,
+      "Current Stock": product.quantity,
+      "Retail Price": product.rprice,
+      "Whole Price": product.wprice,
+      Status: getStockStatus(product.quantity),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(wsData);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory");
+
+    XLSX.writeFile(workbook, "inventory-overview.xlsx");
   };
 
   return (
@@ -466,22 +506,54 @@ export default function StockManagement() {
                     products
                   </Typography>
                 </div>
-                <div className="text-align-right">
+                <div className="text-align-right relative">
+                  <Button
+                    className="bg-primary-500 hover:bg-primary-600"
+                    onClick={() => setExportModalOpen(true)}
+                  >
+                    <span className="material-icons mr-2">file_download</span>
+                    Export
+                  </Button>
+
+                  {exportModalOpen && (
+                    <div className="export-modal bg-white shadow-md p-4 rounded absolute right-0 top-full mt-2 z-10 w-48">
+                      <p className="mb-2 font-semibold">Select Export Format</p>
+                      <Button
+                        className="mb-2 w-full"
+                        onClick={() => {
+                          exportPDF();
+                          setExportModalOpen(false);
+                        }}
+                      >
+                        Export as PDF
+                      </Button>
+                      <Button
+                        className="w-full"
+                        onClick={() => {
+                          exportExcel();
+                          setExportModalOpen(false);
+                        }}
+                      >
+                        Export as Excel
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="mt-2 w-full text-sm"
+                        onClick={() => setExportModalOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div>
                   <Button
                     variant="outline"
                     onClick={() => clearFilters()}
-                    className="flex items-right gap-1"
+                    className="flex items-center gap-1"
                   >
                     Clear Filters
-                  </Button>
-                </div>
-                <div className="text-align-right">
-                  <Button
-                    className="bg-primary-500 hover:bg-primary-600"
-                    onClick={exportPDF}
-                  >
-                    <span className="material-icons mr-2">file_download</span>
-                    Export as PDF
                   </Button>
                 </div>
               </div>
@@ -504,23 +576,26 @@ export default function StockManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Batch</TableHead>
                       <TableHead>Product</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Current Stock</TableHead>
-                      <TableHead>Price</TableHead>
+                      <TableHead>Retail Price</TableHead>
+                      <TableHead>Wholesale Price</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredProducts?.map((product) => (
-                      <TableRow key={product.id} className="hover:bg-grey-50">
+                    {sortedProducts?.map((product) => (
+                      <TableRow key={product._id} className="hover:bg-grey-50">
+                        <TableCell>{product.batch}</TableCell>
                         <TableCell>
                           <div>
                             <div className="font-medium text-grey-900">
                               {product.name}
                             </div>
-                            <div className="text-sm text-grey-600 truncate w-64">
+                            <div className="text-sm text-grey-600 truncate w-40">
                               {product.description}
                             </div>
                           </div>
@@ -533,7 +608,11 @@ export default function StockManagement() {
                         </TableCell>
                         <TableCell className="font-mono text-sm">
                           {"₹"}
-                          {product.price}
+                          {product.rprice}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {"₹"}
+                          {product.wprice}
                         </TableCell>
                         <TableCell>
                           <Badge className={getStockColor(product.quantity)}>
@@ -547,7 +626,7 @@ export default function StockManagement() {
                               size="sm"
                               onClick={() => handleEditProduct(product._id)}
                             >
-                              Restock
+                              Add stock
                             </Button>
                             <Button
                               variant="outline"
@@ -563,10 +642,10 @@ export default function StockManagement() {
                     {(!filteredProducts || filteredProducts.length === 0) && (
                       <TableRow>
                         <TableCell
-                          colSpan={6}
+                          colSpan={8}
                           className="text-center text-grey-500 py-8"
                         >
-                          {search
+                          {filters.search
                             ? "No products match your search criteria"
                             : "No products found"}
                         </TableCell>

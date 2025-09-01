@@ -131,7 +131,7 @@ export default function Products() {
     },
   });
   const maxPrice = Math.max(
-    ...products.map((product) => product.price || 0),
+    ...products.map((product) => product.rprice || 0),
     10000
   );
   const categories = categoriesData?.map((c) => c.name) || ["Other"];
@@ -143,8 +143,8 @@ export default function Products() {
     const matchesCategory =
       filters.category === "all" || product.category === filters.category;
     const matchesPrice =
-      product.price >= filters.priceRange[0] &&
-      product.price <= filters.priceRange[1];
+      product.rprice >= filters.priceRange[0] &&
+      product.rprice <= filters.priceRange[1];
 
     // Stock level filtering
     const stockLevel = product.quantity || 0;
@@ -171,9 +171,9 @@ export default function Products() {
       case "default":
         return 0;
       case "price-low":
-        return a.price - b.price;
+        return a.rprice - b.rprice;
       case "price-high":
-        return b.price - a.price;
+        return b.rprice - a.rprice;
       case "name":
         return a.name.localeCompare(b.name);
       case "rating":

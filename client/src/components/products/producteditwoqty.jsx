@@ -375,29 +375,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
               <FormField
                 control={form.control}
-                name="quantity"
-                rules={{ required: "Quantity is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantity *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(parseInt(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="category"
                 rules={{ required: "Category is required" }}
                 render={({ field }) => (

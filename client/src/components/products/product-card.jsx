@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import EditProductDialog from "./Product Edit";
+import EditProductDialog from "./producteditwoqty";
 import { useState, useEffect } from "react";
 
 export default function ProductCard({ product, onEdit, onDelete }) {
@@ -43,9 +43,13 @@ export default function ProductCard({ product, onEdit, onDelete }) {
       <div className="space-y-2">
         <h4 className="font-medium text-grey-900">{product.name}</h4>
         <p className="text-sm text-grey-600">Category: {product.category}</p>
+         <p className="text-sm text-grey-600">Type: {product.type}</p>
         <div className="flex justify-between items-center">
           <span className="text-lg font-bold text-primary-500">
-            ₹{product.price}
+            ₹{product.rprice}
+          </span>
+          <span className="text-lg font-bold text-primary-500">
+            ₹{product.wprice}
           </span>
           <span className={getStockStatus()}>{getStockText()}</span>
         </div>

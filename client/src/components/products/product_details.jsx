@@ -30,23 +30,28 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-export default function ViewProductDialog({ open, onOpenChange, productId }) {
+export default function EditProductDialog({ open, onOpenChange, productId }) {
   const { toast } = useToast();
 
   const form = useForm({
     defaultValues: {
       name: "",
       description: "",
-      price: "0",
-      quantity: 0,
+      type: "",
+      quantity: "",
       category: "",
-      sku: "",
+      weight: "",
       isActive: true,
+      rprice: "",
+      wprice: "",
+      batch: "",
     },
   });
 
   const [categories, setCategories] = useState([]);
+  const [types, setTypes] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(true);
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -83,9 +88,38 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
       }
     };
 
+    const fetchTypes = async () => {
+      try {
+        setIsLoadingTypes(true);
+        const response = await axios.get("http://localhost:3000/api/types/get");
+
+        if (
+          response.data &&
+          response.data.success &&
+          Array.isArray(response.data.data)
+        ) {
+          setTypes(response.data.data);
+        } else if (Array.isArray(response.data)) {
+          setTypes(response.data);
+        } else {
+          setTypes([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch types:", error);
+        setTypes([]);
+        toast({
+          title: "Error",
+          description: "Failed to load types. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingTypes(false);
+      }
+    };
+
     const fetchProduct = async () => {
       if (!productId) return;
-        console.log(productId);
+
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
@@ -93,18 +127,20 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
         );
 
         if (response.data && response.data.data) {
-          console.log("Fetched Product:", response.data.data);
           const productData = response.data.data;
           console.log(productData);
           // Update form with product data
           form.reset({
             name: productData.name || "",
             description: productData.description || "",
-            price: (productData.price || 0).toString(),
+            rprice: (productData.rprice || 0).toString(),
+            wprice: (productData.wprice || 0).toString(),
+            weight: (productData.weight || 0).toString(),
             quantity: productData.quantity || 0,
             category: productData.category,
-            sku: productData.sku || "",
+            type: productData.type,
             isActive: productData.isActive ?? true,
+            batch: productData.batch || "",
           });
         }
       } catch (error) {
@@ -122,6 +158,7 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
 
     fetchCategories();
     fetchProduct();
+    fetchTypes();
   }, [productId, toast, form]);
   console.log(products);
 
@@ -132,11 +169,13 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
       // Append all form fields
       formData.append("name", data.name);
       formData.append("description", data.description);
-      formData.append("price", parseFloat(data.price) || 0);
-      formData.append("quantity", parseInt(data.quantity) || 0);
       formData.append("category", data.category);
-      formData.append("sku", data.sku);
+      formData.append("type", data.type);
+      formData.append("weight", data.weight);
       formData.append("isActive", data.isActive);
+      formData.append("batch", data.batch);
+      formData.append("wprice", data.wprice);
+      formData.append("rprice", data.rprice);
 
       // Send FormData to backend
       const response = await axios.put(
@@ -176,7 +215,7 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
 
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
-    axios.put(`http://localhost:3000/api/products/update/${productId}`,data);
+    axios.put(`http://localhost:3000/api/products/update/${productId}`, data);
   };
 
   const handleCancel = () => {
@@ -189,11 +228,11 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <span className="material-icons mr-2">visibility</span>
+            <span className="material-icons mr-2">edit</span>
             View Product
           </DialogTitle>
           <DialogDescription>
-            View the details for the products.
+            View the details of the product.
           </DialogDescription>
         </DialogHeader>
 
@@ -217,13 +256,13 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
 
               <FormField
                 control={form.control}
-                name="sku"
+                name="weight"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SKU</FormLabel>
+                    <FormLabel>Weight *</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter SKU (e.g., BAN001)"
+                        placeholder="Enter Weight (e.g., 100g, 150g)"
                         {...field}
                         disabled
                       />
@@ -256,21 +295,83 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
             <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="price"
-                rules={{ required: "Price is required" }}
+                name="rprice"
+                rules={{ required: "Retail price is required" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price (₹) *</FormLabel>
+                    <FormLabel>Retail Price *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        step="0.01"
                         min="0"
-                        placeholder="0.00"
+                        placeholder="0"
                         {...field}
                         disabled
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="wprice"
+                rules={{ required: "Wholesale price is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wholesale Price *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        {...field}
+                        disabled
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                rules={{ required: "Type is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Types *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" disabled />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {isLoadingTypes ? (
+                          <SelectItem value="loading" disabled>
+                            Loading types...
+                          </SelectItem>
+                        ) : types && types.length > 0 ? (
+                          types.map((type) => (
+                            <SelectItem
+                              key={type._id || type.id || type.name}
+                              value={type.name}
+                            >
+                              {type.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-types" disabled>
+                            No types available - Please add types first
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -289,10 +390,10 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
                         min="0"
                         placeholder="0"
                         {...field}
+                        disabled
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value) || 0)
                         }
-                        disabled
                       />
                     </FormControl>
                     <FormMessage />
@@ -310,10 +411,10 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
                     <Select onValueChange={field.onChange} value={field.value} disabled>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Select category" disabled />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent >
+                      <SelectContent>
                         {isLoadingCategories ? (
                           <SelectItem value="loading" disabled>
                             Loading categories...
@@ -335,6 +436,27 @@ export default function ViewProductDialog({ open, onOpenChange, productId }) {
                         )}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="batch"
+                rules={{ required: "Batch is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Batch *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Enter Batch(2025sep01, 2025sep02)"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value || "")}
+                        sx={{ gridColumn: "span 4" }}
+                        disabled
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

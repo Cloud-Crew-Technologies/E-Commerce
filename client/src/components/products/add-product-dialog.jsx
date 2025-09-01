@@ -37,16 +37,21 @@ export default function AddProductDialog({ open, onOpenChange }) {
     defaultValues: {
       name: "",
       description: "",
-      price: "0",
-      quantity: 0,
+      type: "",
+      quantity: "",
       category: "",
-      sku: "",
+      weight: "",
       isActive: true,
+      rprice: "",
+      wprice: "",
+      batch: "",
     },
   });
 
   const [categories, setCategories] = useState([]);
+  const [types, setTypes] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -81,7 +86,36 @@ export default function AddProductDialog({ open, onOpenChange }) {
         setIsLoadingCategories(false);
       }
     };
+    const fetchTypes = async () => {
+      try {
+        setIsLoadingTypes(true);
+        const response = await axios.get("http://localhost:3000/api/types/get");
+
+        if (
+          response.data &&
+          response.data.success &&
+          Array.isArray(response.data.data)
+        ) {
+          setTypes(response.data.data);
+        } else if (Array.isArray(response.data)) {
+          setTypes(response.data);
+        } else {
+          setTypes([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch types:", error);
+        setTypes([]);
+        toast({
+          title: "Error",
+          description: "Failed to load types. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingTypes(false);
+      }
+    };
     fetchCategories();
+    fetchTypes();
   }, [toast]);
 
   // Handle file selection
@@ -122,15 +156,17 @@ export default function AddProductDialog({ open, onOpenChange }) {
   const addProductMutation = useMutation({
     mutationFn: async (data) => {
       // Create FormData to send file along with other data
-      const formData = new FormData();// Generate a random ID for ProductId
+      const formData = new FormData(); // Generate a random ID for ProductId
       // Append all form fields
       formData.append("name", data.name);
       formData.append("description", data.description);
-      formData.append("price", parseFloat(data.price) || 0);
-      formData.append("quantity", parseInt(data.quantity) || 0);
       formData.append("category", data.category);
-      formData.append("sku", data.sku);
+      formData.append("type", data.type);
+      formData.append("weight", data.weight);
       formData.append("isActive", data.isActive);
+      formData.append("batch", data.batch);
+      formData.append("wprice", data.wprice);
+      formData.append("rprice", data.rprice);
 
       // Append image file if selected
       if (selectedFile) {
@@ -171,6 +207,9 @@ export default function AddProductDialog({ open, onOpenChange }) {
           "Failed to add product",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      window.location.reload();
     },
   });
 
@@ -219,13 +258,14 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
               <FormField
                 control={form.control}
-                name="sku"
+                name="weight"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>SKU</FormLabel>
+                    <FormLabel>Weight *</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter SKU (e.g., BAN001)"
+                        placeholder="Enter Weight (e.g., 100g, 150g)"
+                        type="number"
                         {...field}
                       />
                     </FormControl>
@@ -256,32 +296,11 @@ export default function AddProductDialog({ open, onOpenChange }) {
             <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
-                name="price"
-                rules={{ required: "Price is required" }}
+                name="rprice"
+                rules={{ required: "Retail price is required" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price (₹) *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="quantity"
-                rules={{ required: "Quantity is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantity *</FormLabel>
+                    <FormLabel>Retail Price *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
@@ -289,10 +308,69 @@ export default function AddProductDialog({ open, onOpenChange }) {
                         placeholder="0"
                         {...field}
                         onChange={(e) =>
-                          field.onChange(parseInt(e.target.value) || 0)
+                          field.onChange(parseInt(e.target.value))
                         }
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="wprice"
+                rules={{ required: "Wholesale price is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Wholesale Price *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                rules={{ required: "Type is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Types *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {isLoadingTypes ? (
+                          <SelectItem value="loading" disabled>
+                            Loading types...
+                          </SelectItem>
+                        ) : types && types.length > 0 ? (
+                          types.map((type) => (
+                            <SelectItem
+                              key={type._id || type.id || type.name}
+                              value={type.name}
+                            >
+                              {type.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-types" disabled>
+                            No types available - Please add types first
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -333,6 +411,26 @@ export default function AddProductDialog({ open, onOpenChange }) {
                         )}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="batch"
+                rules={{ required: "Batch is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Batch *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="text"
+                        placeholder="Enter Batch(2025sep01, 2025sep02)"
+                        {...field}
+                        onChange={(e) => field.onChange(e.target.value || "")}
+                        sx={{ gridColumn: "span 4" }}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
