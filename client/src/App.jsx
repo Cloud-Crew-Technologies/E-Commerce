@@ -23,7 +23,7 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/stock" component={StockManagement} />
-      <ProtectedRoute path="/coupons" component={Coupons} />
+      {/* <ProtectedRoute path="/coupons" component={Coupons} /> */}
       <ProtectedRoute path="/orders" component={Orders} />
       <ProtectedRoute path="/customers" component={Customers} />
       <ProtectedRoute path="/settings" component={StoreSettings} />

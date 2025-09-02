@@ -1,16 +1,29 @@
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { apiRequest, queryClient } from "@/lib/queryClient"
-import { useToast } from "@/hooks/use-toast"
-import { insertCouponSchema } from "@shared/schema"
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { insertCouponSchema } from "@shared/schema";
 
 export default function AddCouponDialog({ open, onOpenChange }) {
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   const form = useForm({
     resolver: zodResolver(insertCouponSchema),
@@ -22,27 +35,37 @@ export default function AddCouponDialog({ open, onOpenChange }) {
       expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       isActive: true,
     },
-  })
+  });
 
   const addCouponMutation = useMutation({
     mutationFn: async (data) => {
-      const response = await apiRequest("POST", "/api/coupons/create", data)
-      return await response.json()
+      const response = await apiRequest("POST", "/api/coupons/create", data);
+      return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/coupons/getall"] })
-      toast({ title: "Coupon created", description: "Coupon has been successfully created." })
-      form.reset()
-      onOpenChange(false)
+      queryClient.invalidateQueries({ queryKey: ["/api/coupons/getall"] });
+      toast({
+        title: "Coupon created",
+        description: "Coupon has been successfully created.",
+      });
+      form.reset();
+      onOpenChange(false);
     },
     onError: (error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
-  })
+    onSettled: () => {
+      window.location.reload();
+    },
+  });
 
   const onSubmit = (data) => {
-    addCouponMutation.mutate(data)
-  }
+    addCouponMutation.mutate(data);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -52,7 +75,9 @@ export default function AddCouponDialog({ open, onOpenChange }) {
             <span className="material-icons mr-2">local_offer</span>
             Create New Coupon
           </DialogTitle>
-          <DialogDescription>Create a discount coupon for your customers</DialogDescription>
+          <DialogDescription>
+            Create a discount coupon for your customers
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -64,7 +89,13 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                 <FormItem>
                   <FormLabel>Coupon Code</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., SAVE20, WELCOME10" {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} />
+                    <Input
+                      placeholder="e.g., SAVE20, WELCOME10"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(e.target.value.toUpperCase())
+                      }
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -93,7 +124,16 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                   <FormItem>
                     <FormLabel>Discount (%)</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" max="100" placeholder="20" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                      <Input
+                        type="number"
+                        min="1"
+                        max="100"
+                        placeholder="20"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value) || 0)
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -107,7 +147,15 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                   <FormItem>
                     <FormLabel>Usage Limit</FormLabel>
                     <FormControl>
-                      <Input type="number" min="1" placeholder="100" {...field} onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} />
+                      <Input
+                        type="number"
+                        min="1"
+                        placeholder="100"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value) || 0)
+                        }
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -122,7 +170,16 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                 <FormItem>
                   <FormLabel>Expiry Date</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} value={field.value ? new Date(field.value).toISOString().split("T")[0] : ""} onChange={(e) => field.onChange(new Date(e.target.value))} />
+                    <Input
+                      type="date"
+                      {...field}
+                      value={
+                        field.value
+                          ? new Date(field.value).toISOString().split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) => field.onChange(new Date(e.target.value))}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -130,13 +187,23 @@ export default function AddCouponDialog({ open, onOpenChange }) {
             />
 
             <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" className="bg-secondary-500 hover:bg-secondary-600" disabled={addCouponMutation.isPending}>
+              <Button
+                type="submit"
+                className="bg-secondary-500 hover:bg-secondary-600"
+                disabled={addCouponMutation.isPending}
+              >
                 {addCouponMutation.isPending ? (
                   <>
-                    <span className="material-icons mr-2 animate-spin">refresh</span>
+                    <span className="material-icons mr-2 animate-spin">
+                      refresh
+                    </span>
                     Creating...
                   </>
                 ) : (
@@ -151,7 +218,5 @@ export default function AddCouponDialog({ open, onOpenChange }) {
         </Form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-
-
