@@ -33,10 +33,13 @@ export default function Products() {
   const [products, setProduct] = useState([]);
   const [categoriesData, setCategoriesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [types, setTypes] = useState([]);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     search: "",
     category: "all",
+    types: "all",
     priceRange: [0, 10000],
     sortBy: "",
     stockLevel: "all", // 'all', 'no-stock', 'low-stock', 'full-stock'
@@ -50,8 +53,36 @@ export default function Products() {
   useEffect(() => {
     fetchCategories();
     fetchCategoriesData();
+    fetchTypes();
   }, []);
+  const fetchTypes = async () => {
+    try {
+      setIsLoadingTypes(true);
+      const response = await axios.get("http://localhost:3000/api/types/get");
 
+      if (
+        response.data &&
+        response.data.success &&
+        Array.isArray(response.data.data)
+      ) {
+        setTypes(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        setTypes(response.data);
+      } else {
+        setTypes([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch types:", error);
+      setTypes([]);
+      toast({
+        title: "Error",
+        description: "Failed to load types. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingTypes(false);
+    }
+  };
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
@@ -135,6 +166,7 @@ export default function Products() {
     10000
   );
   const categories = categoriesData?.map((c) => c.name) || ["Other"];
+  const type = types?.map((c) => c.name) || ["Other"];
 
   const filteredProducts = products?.filter((product) => {
     const matchesSearch = product.name
@@ -142,6 +174,8 @@ export default function Products() {
       .includes(filters.search.toLowerCase());
     const matchesCategory =
       filters.category === "all" || product.category === filters.category;
+    const matchesTypes =
+      filters.types === "all" || product.type === filters.types;
     const matchesPrice =
       product.rprice >= filters.priceRange[0] &&
       product.rprice <= filters.priceRange[1];
@@ -157,7 +191,11 @@ export default function Products() {
       (filters.stockLevel === "full-stock" && stockLevel > 10);
 
     return (
-      matchesSearch && matchesCategory && matchesPrice && matchesStockLevel
+      matchesSearch &&
+      matchesCategory &&
+      matchesPrice &&
+      matchesStockLevel &&
+      matchesTypes
     );
   });
 
@@ -187,6 +225,7 @@ export default function Products() {
     setFilters({
       search: "",
       category: "all",
+      types: "all",
       priceRange: [0, maxPrice],
       sortBy: "",
       stockLevel: "all",
@@ -245,6 +284,24 @@ export default function Products() {
                     {categories.map((catName) => (
                       <SelectItem key={catName} value={catName}>
                         {catName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={filters.types}
+                  onValueChange={(value) =>
+                    setFilters({ ...filters, types: value })
+                  }
+                >
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="Select Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {type.map((typName) => (
+                      <SelectItem key={typName} value={typName}>
+                        {typName}
                       </SelectItem>
                     ))}
                   </SelectContent>

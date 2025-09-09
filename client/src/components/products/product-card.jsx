@@ -59,9 +59,9 @@ export default function ProductCard({ product, onEdit, onDelete }) {
               {product.type}
             </span>
           )}
-          <span className={`px-2 py-0.5 rounded-full border ${getStockStatusClasses()}`}>
+          {/* <span className={`px-2 py-0.5 rounded-full border ${getStockStatusClasses()}`}>
             {getStockText()}
-          </span>
+          </span> */}
         </div>
 
         {/* Prices */}

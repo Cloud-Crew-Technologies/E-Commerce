@@ -30,15 +30,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Typography } from "@mui/material";
-import ViewProductDialog from "@/components/products/product_details";
-import EditProductDialog from "@/components/products/Product Edit";
+import ViewProductDialog from "@/batch/product_details";
+import EditBatchDialog from "@/batch/edit-batch";
 
 export default function StockManagement() {
   const [search, setSearch] = useState("");
   const { toast } = useToast();
   const [products, setProduct] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [types, setTypes] = useState([]);
+  const [isLoadingTypes, setIsLoadingTypes] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedBatch, setSelectedBatch] = useState(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [categoriesData, setCategoriesData] = useState([]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -47,33 +50,69 @@ export default function StockManagement() {
   const [filters, setFilters] = useState({
     search: "",
     category: "all",
+    types: "all",
     priceRange: [0, 10000],
     sortBy: "",
     stockLevel: "all", // 'all', 'no-stock', 'low-stock', 'full-stock'
+    batch: "all", // new: batch filter
   });
+  const [batchProductId, setBatchProductId] = useState("");
 
   useEffect(() => {
     fetchCategoriesData();
     fetchCategories();
+    fetchTypes();
   }, []);
+  const fetchTypes = async () => {
+    try {
+      setIsLoadingTypes(true);
+      const response = await axios.get("http://localhost:3000/api/types/get");
 
+      if (
+        response.data &&
+        response.data.success &&
+        Array.isArray(response.data.data)
+      ) {
+        setTypes(response.data.data);
+      } else if (Array.isArray(response.data)) {
+        setTypes(response.data);
+      } else {
+        setTypes([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch types:", error);
+      setTypes([]);
+      toast({
+        title: "Error",
+        description: "Failed to load types. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingTypes(false);
+    }
+  };
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get(
-        "http://localhost:3000/api/products/get"
-      );
+      const response = await axios.get("http://localhost:3000/api/batch/get");
 
-      const categoryData = response.data;
-      console.log("Fetched Products:", categoryData);
-      if (Array.isArray(categoryData)) {
-        setProduct(categoryData);
-      } else if (categoryData && Array.isArray(categoryData.data)) {
-        setProduct(categoryData.data);
-      } else {
-        console.warn("Unexpected response structure:", categoryData);
-        setProduct([]);
-      }
+      const payload = response.data;
+      console.log("Fetched Batches:", payload);
+
+      // Normalize batches array from various shapes
+      const batches = Array.isArray(payload?.data)
+        ? payload.data
+        : Array.isArray(payload)
+        ? payload
+        : [];
+
+      // Flatten into products with `batch` attached
+      const list = batches.flatMap((b) => {
+        const prods = Array.isArray(b?.products) ? b.products : [];
+        return prods.map((p) => ({ ...p, batch: b.batch }));
+      });
+
+      setProduct(list);
     } catch (error) {
       console.error("Error fetching Products:", error);
       setProduct([]);
@@ -121,6 +160,18 @@ export default function StockManagement() {
     10000
   );
   const categories = categoriesData?.map((c) => c.name) || ["Other"];
+  const type = types?.map((c) => c.name) || ["Other"];
+
+  // Unique batch list from products
+  const batches = Array.from(
+    new Set((products || []).map((p) => p.batch).filter(Boolean))
+  );
+
+  // Products for selected batch
+  const productsForBatch =
+    (filters.batch === "all"
+      ? []
+      : (products || []).filter((p) => p.batch === filters.batch)) || [];
 
   const filteredProducts = products?.filter((product) => {
     const matchesSearch = product.name
@@ -128,6 +179,8 @@ export default function StockManagement() {
       .includes(filters.search.toLowerCase());
     const matchesCategory =
       filters.category === "all" || product.category === filters.category;
+    const matchesTypes =
+      filters.types === "all" || product.type === filters.types;
     const matchesPrice =
       product.rprice >= filters.priceRange[0] &&
       product.rprice <= filters.priceRange[1];
@@ -142,8 +195,22 @@ export default function StockManagement() {
         stockLevel <= 10) ||
       (filters.stockLevel === "full-stock" && stockLevel > 10);
 
+    // Batch filter
+    const matchesBatch =
+      filters.batch === "all" || product.batch === filters.batch;
+
+    // Batch product filter (optional)
+    const matchesBatchProduct =
+      !batchProductId || product._id === batchProductId;
+
     return (
-      matchesSearch && matchesCategory && matchesPrice && matchesStockLevel
+      matchesSearch &&
+      matchesCategory &&
+      matchesTypes &&
+      matchesPrice &&
+      matchesStockLevel &&
+      matchesBatch &&
+      matchesBatchProduct
     );
   });
 
@@ -173,15 +240,20 @@ export default function StockManagement() {
     setFilters({
       search: "",
       category: "all",
+      types: "all",
       priceRange: [0, maxPrice],
       sortBy: "",
       stockLevel: "all",
+      batch: "all",
     });
+    setBatchProductId("");
   };
-  const details = (id) => {
-    setSelectedProduct(id);
+  const details = (product) => {
+    if (!product) return;
+    const { _id, batch } = product;
+    setSelectedProduct(_id);
+    setSelectedBatch(batch || null);
     setIsViewDialogOpen(true);
-    console.log(id);
   };
 
   const updateStockMutation = useMutation({
@@ -221,8 +293,11 @@ export default function StockManagement() {
   const outOfStockProducts =
     filteredProducts?.filter((product) => product.quantity === 0) || [];
 
-  const handleEditProduct = (id) => {
-    setSelectedProduct(id);
+  const handleEditProduct = (product) => {
+    if (!product) return;
+    const { _id, batch } = product;
+    setSelectedProduct(_id);
+    setSelectedBatch(batch || null);
     setIsEditDialogOpen(true);
   };
 
@@ -254,6 +329,7 @@ export default function StockManagement() {
       { header: "Product", dataKey: "name" },
       { header: "Description", dataKey: "description" },
       { header: "Category", dataKey: "category" },
+      { header: "Type", dataKey: "type" },
       { header: "Current Stock", dataKey: "quantity" },
       { header: "Retail Price", dataKey: "rprice" },
       { header: "Whole Price", dataKey: "wprice" },
@@ -265,6 +341,7 @@ export default function StockManagement() {
       name: product.name,
       description: product.description,
       category: product.category,
+      type: product.type,
       quantity: product.quantity + " units",
       rprice: `${product.rprice}`,
       wprice: `${product.wprice}`,
@@ -310,6 +387,7 @@ export default function StockManagement() {
       Product: product.name,
       Description: product.description,
       Category: product.category,
+      Type: product.type,
       "Current Stock": product.quantity,
       "Retail Price": product.rprice,
       "Whole Price": product.wprice,
@@ -423,10 +501,10 @@ export default function StockManagement() {
             <CardHeader>
               <CardTitle>Inventory Overview</CardTitle>
 
-              {/* Search and Export */}
-              <div className="flex items-center gap-4 mt-4 w-full">
-                <div className="flex flex-col  gap-4 mb-6 w-full">
-                  <div className="flex-1 relative">
+              {/* Filters and Actions */}
+              <div className="mt-4 w-full flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="relative w-full sm:w-72">
                     <span className="material-icons absolute left-3 top-1/2 transform -translate-y-1/2 text-grey-400">
                       search
                     </span>
@@ -439,122 +517,162 @@ export default function StockManagement() {
                       className="pl-10 pr-4"
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Select
-                      value={filters.category}
-                      onValueChange={(value) =>
-                        setFilters({ ...filters, category: value })
-                      }
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Select Category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map((catName) => (
-                          <SelectItem key={catName} value={catName}>
-                            {catName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
-                      value={filters.sortBy}
-                      onValueChange={(value) =>
-                        setFilters({ ...filters, sortBy: value })
-                      }
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Sort By" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="default">Default</SelectItem>
-                        <SelectItem value="price-low">
-                          Price: Low to High
-                        </SelectItem>
-                        <SelectItem value="price-high">
-                          Price: High to Low
-                        </SelectItem>
-                        <SelectItem value="name">Name</SelectItem>
-                        <SelectItem value="rating">Rating</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      value={filters.stockLevel}
-                      onValueChange={(value) =>
-                        setFilters({ ...filters, stockLevel: value })
-                      }
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Stock Level" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Stock Levels</SelectItem>
-                        <SelectItem value="no-stock">Out of Stock</SelectItem>
-                        <SelectItem value="low-stock">
-                          Low Stock (≤10)
-                        </SelectItem>
-                        <SelectItem value="full-stock">
-                          Full Stock (&gt;10)
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Typography variant="body2" color="text.secondary">
-                    Showing {filteredProducts?.length} of {products?.length}{" "}
-                    products
-                  </Typography>
-                </div>
-                <div className="text-align-right relative">
-                  <Button
-                    className="bg-primary-500 hover:bg-primary-600"
-                    onClick={() => setExportModalOpen(true)}
+                  <Select
+                    value={filters.category}
+                    onValueChange={(value) =>
+                      setFilters({ ...filters, category: value })
+                    }
                   >
-                    <span className="material-icons mr-2">file_download</span>
-                    Export
-                  </Button>
+                    <SelectTrigger className="w-56">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      {categories.map((catName) => (
+                        <SelectItem key={catName} value={catName}>
+                          {catName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.types}
+                    onValueChange={(value) =>
+                      setFilters({ ...filters, types: value })
+                    }
+                  >
+                    <SelectTrigger className="w-56">
+                      <SelectValue placeholder="Select Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {type.map((typName) => (
+                        <SelectItem key={typName} value={typName}>
+                          {typName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.sortBy}
+                    onValueChange={(value) =>
+                      setFilters({ ...filters, sortBy: value })
+                    }
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Sort By" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Default</SelectItem>
+                      <SelectItem value="price-low">
+                        Price: Low to High
+                      </SelectItem>
+                      <SelectItem value="price-high">
+                        Price: High to Low
+                      </SelectItem>
+                      <SelectItem value="name">Name</SelectItem>
+                      <SelectItem value="rating">Rating</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.batch}
+                    onValueChange={(value) =>
+                      setFilters({ ...filters, batch: value })
+                    }
+                  >
+                    <SelectTrigger className="w-56">
+                      <SelectValue placeholder="Choose a batch" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Select a Batch</SelectItem>
+                      {batches.map((batchValue) => (
+                        <SelectItem key={batchValue} value={batchValue}>
+                          {batchValue}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.stockLevel}
+                    onValueChange={(value) =>
+                      setFilters({ ...filters, stockLevel: value })
+                    }
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue placeholder="Stock Level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Stock Levels</SelectItem>
+                      <SelectItem value="no-stock">Out of Stock</SelectItem>
+                      <SelectItem value="low-stock">Low Stock (≤10)</SelectItem>
+                      <SelectItem value="full-stock">
+                        Full Stock (&gt;10)
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="flex justify-start w-full gap-4 mr-6 mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => clearFilters()}
+                      className="flex items-center gap-1"
+                    >
+                      Clear Filters
+                    </Button>
+                    <div className="relative">
+                      <Button
+                        className="bg-primary-500 hover:bg-primary-600"
+                        onClick={() => setExportModalOpen(true)}
+                      >
+                        <span className="material-icons mr-2">
+                          file_download
+                        </span>
+                        Export
+                      </Button>
 
-                  {exportModalOpen && (
-                    <div className="export-modal bg-white shadow-md p-4 rounded absolute right-0 top-full mt-2 z-10 w-48">
-                      <p className="mb-2 font-semibold">Select Export Format</p>
-                      <Button
-                        className="mb-2 w-full"
-                        onClick={() => {
-                          exportPDF();
-                          setExportModalOpen(false);
-                        }}
-                      >
-                        Export as PDF
-                      </Button>
-                      <Button
-                        className="w-full"
-                        onClick={() => {
-                          exportExcel();
-                          setExportModalOpen(false);
-                        }}
-                      >
-                        Export as Excel
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="mt-2 w-full text-sm"
-                        onClick={() => setExportModalOpen(false)}
-                      >
-                        Cancel
-                      </Button>
+                      {exportModalOpen && (
+                        <div className="export-modal bg-white shadow-md p-4 rounded absolute right-0 top-full mt-2 z-10 w-48">
+                          <p className="mb-2 font-semibold">
+                            Select Export Format
+                          </p>
+                          <Button
+                            className="mb-2 w-full"
+                            onClick={() => {
+                              exportPDF();
+                              setExportModalOpen(false);
+                            }}
+                          >
+                            Export as PDF
+                          </Button>
+                          <Button
+                            className="w-full"
+                            onClick={() => {
+                              exportExcel();
+                              setExportModalOpen(false);
+                            }}
+                          >
+                            Export as Excel
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="mt-2 w-full text-sm"
+                            onClick={() => setExportModalOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                <div>
-                  <Button
-                    variant="outline"
-                    onClick={() => clearFilters()}
-                    className="flex items-center gap-1"
-                  >
-                    Clear Filters
-                  </Button>
+                    <div className="flex justify-end w-full">
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        className="text-right"
+                      >
+                        Showing {filteredProducts?.length} of {products?.length}{" "}
+                        products
+                      </Typography>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -579,9 +697,11 @@ export default function StockManagement() {
                       <TableHead>Batch</TableHead>
                       <TableHead>Product</TableHead>
                       <TableHead>Category</TableHead>
+                      <TableHead>Type</TableHead>
                       <TableHead>Current Stock</TableHead>
                       <TableHead>Retail Price</TableHead>
-                      <TableHead>Wholesale Price</TableHead>
+                      {/* <TableHead>Wholesale Price</TableHead> */}
+                      <TableHead>Expiry Date </TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
@@ -603,6 +723,9 @@ export default function StockManagement() {
                         <TableCell>
                           <Badge variant="outline">{product.category}</Badge>
                         </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{product.type}</Badge>
+                        </TableCell>
                         <TableCell className="font-medium">
                           {product.quantity} units
                         </TableCell>
@@ -610,9 +733,12 @@ export default function StockManagement() {
                           {"₹"}
                           {product.rprice}
                         </TableCell>
-                        <TableCell className="font-mono text-sm">
+                        {/* <TableCell className="font-mono text-sm">
                           {"₹"}
                           {product.wprice}
+                        </TableCell> */}
+                        <TableCell className="font-mono text-sm ">
+                          {product.expiryDate}
                         </TableCell>
                         <TableCell>
                           <Badge className={getStockColor(product.quantity)}>
@@ -620,18 +746,18 @@ export default function StockManagement() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleEditProduct(product._id)}
+                              onClick={() => handleEditProduct(product)}
                             >
                               Add stock
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => details(product._id)}
+                              onClick={() => details(product)}
                             >
                               View Details
                             </Button>
@@ -663,11 +789,13 @@ export default function StockManagement() {
         open={isViewDialogOpen}
         onOpenChange={setIsViewDialogOpen}
         productId={selectedProduct}
+        batch={selectedBatch}
       />
-      <EditProductDialog
+      <EditBatchDialog
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         productId={selectedProduct}
+        batch={selectedBatch}
       />
     </div>
   );

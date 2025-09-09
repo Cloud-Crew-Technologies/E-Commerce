@@ -44,7 +44,8 @@ export default function AddProductDialog({ open, onOpenChange }) {
       isActive: true,
       rprice: "",
       wprice: "",
-      batch: "",
+      expiryDate: "",
+      benefits: "",
     },
   });
 
@@ -164,9 +165,10 @@ export default function AddProductDialog({ open, onOpenChange }) {
       formData.append("type", data.type);
       formData.append("weight", data.weight);
       formData.append("isActive", data.isActive);
-      formData.append("batch", data.batch);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
+      formData.append("expiryDate", data.expiryDate);
+      formData.append("benefits", data.benefits);
 
       // Append image file if selected
       if (selectedFile) {
@@ -292,6 +294,41 @@ export default function AddProductDialog({ open, onOpenChange }) {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="benefits"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Benefits</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter benefits description..."
+                      className="min-h-[80px]"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const bullet = "* ";
+                          const { selectionStart, selectionEnd, value } =
+                            e.target;
+                          const newValue =
+                            value.slice(0, selectionStart) +
+                            "\n" +
+                            bullet +
+                            value.slice(selectionEnd);
+
+                          // Update using RHF's onChange
+                          field.onChange(newValue);
+                          // Optionally move the caret, see note below
+                        }
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-3 gap-4">
               <FormField
@@ -411,26 +448,6 @@ export default function AddProductDialog({ open, onOpenChange }) {
                         )}
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="batch"
-                rules={{ required: "Batch is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Batch *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        placeholder="Enter Batch(2025sep01, 2025sep02)"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value || "")}
-                        sx={{ gridColumn: "span 4" }}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

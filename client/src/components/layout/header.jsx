@@ -4,7 +4,6 @@ export default function Header({ title, subtitle }) {
   const storename = sessionStorage.getItem("storename");
   const { user } = useAuth();
   const name = sessionStorage.getItem("name");
-  console.log(storename);
   return (
     <header className="bg-white material-elevation-1 h-16 flex items-center justify-between px-6">
       <div>

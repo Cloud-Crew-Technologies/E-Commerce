@@ -30,7 +30,12 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-export default function EditProductDialog({ open, onOpenChange, productId }) {
+export default function EditProductDialog({
+  open,
+  onOpenChange,
+  productId,
+  batch,
+}) {
   const { toast } = useToast();
 
   const form = useForm({
@@ -122,9 +127,8 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
       try {
         setIsLoadingProducts(true);
-        const response = await axios.get(
-          `http://localhost:3000/api/products/get/${productId}`
-        );
+        const url = `http://localhost:3000/api/batch/${batch}/products/${productId}`;
+        const response = await axios.get(url);
 
         if (response.data && response.data.data) {
           const productData = response.data.data;
@@ -159,7 +163,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
     fetchCategories();
     fetchProduct();
     fetchTypes();
-  }, [productId, toast, form]);
+  }, [productId, batch, toast, form]);
   console.log(products);
 
   const updateProductMutation = useMutation({
@@ -179,7 +183,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
       // Send FormData to backend
       const response = await axios.put(
-        `http://localhost:3000/api/${batchID}/products/update/${productId}`,
+        `http://localhost:3000/api/products/update/${productId}`,
         formData,
         {
           headers: {
@@ -191,7 +195,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/batch/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Product updated",
         description: "Product has been successfully updated.",
@@ -201,13 +205,13 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       window.location.reload();
     },
     onError: (error) => {
-      console.error("Edit product error:", error);
+      console.error("Add product error:", error);
       toast({
         title: "Error",
         description:
           error.response?.data?.message ||
           error.message ||
-          "Failed to edit product",
+          "Failed to add product",
         variant: "destructive",
       });
     },
@@ -229,10 +233,10 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <span className="material-icons mr-2">edit</span>
-            Edit Product
+            View Product
           </DialogTitle>
           <DialogDescription>
-            Enter the details for the new product.
+            View the details of the product.
           </DialogDescription>
         </DialogHeader>
 
@@ -247,7 +251,11 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                   <FormItem>
                     <FormLabel>Product Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter product name" {...field} />
+                      <Input
+                        placeholder="Enter product name"
+                        {...field}
+                        disabled
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -264,6 +272,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                       <Input
                         placeholder="Enter Weight (e.g., 100g, 150g)"
                         {...field}
+                        disabled
                       />
                     </FormControl>
                     <FormMessage />
@@ -283,6 +292,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                       placeholder="Enter product description..."
                       className="min-h-[80px]"
                       {...field}
+                      disabled
                     />
                   </FormControl>
                   <FormMessage />
@@ -304,6 +314,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         min="0"
                         placeholder="0"
                         {...field}
+                        disabled
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))
                         }
@@ -325,6 +336,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         type="number"
                         placeholder="0"
                         {...field}
+                        disabled
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))
                         }
@@ -341,10 +353,14 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Types *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue placeholder="Select type" disabled />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -386,8 +402,9 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         min="0"
                         placeholder="0"
                         {...field}
+                        disabled
                         onChange={(e) =>
-                          field.onChange(parseInt(e.target.value))
+                          field.onChange(parseInt(e.target.value) || 0)
                         }
                       />
                     </FormControl>
@@ -403,10 +420,14 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Select category" disabled />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -468,25 +489,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                 disabled={updateProductMutation.isPending}
               >
                 Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-primary-500 hover:bg-primary-600"
-                disabled={updateProductMutation.isPending}
-              >
-                {updateProductMutation.isPending ? (
-                  <>
-                    <span className="material-icons mr-2 animate-spin">
-                      refresh
-                    </span>
-                    Editing Product...
-                  </>
-                ) : (
-                  <>
-                    <span className="material-icons mr-2">save</span>
-                    Save Changes
-                  </>
-                )}
               </Button>
             </div>
           </form>

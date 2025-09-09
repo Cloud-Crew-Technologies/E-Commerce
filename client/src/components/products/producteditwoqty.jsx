@@ -44,7 +44,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       isActive: true,
       rprice: "",
       wprice: "",
-      batch: "",
+      benefits: "",
     },
   });
 
@@ -140,7 +140,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
             category: productData.category,
             type: productData.type,
             isActive: productData.isActive ?? true,
-            batch: productData.batch || "",
+            benefits: productData.benefits || "", // fix typo here
           });
         }
       } catch (error) {
@@ -160,7 +160,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
     fetchProduct();
     fetchTypes();
   }, [productId, toast, form]);
-  console.log(products);
 
   const updateProductMutation = useMutation({
     mutationFn: async (data) => {
@@ -173,7 +172,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       formData.append("type", data.type);
       formData.append("weight", data.weight);
       formData.append("isActive", data.isActive);
-      formData.append("batch", data.batch);
+      formData.append("benefits", data.benefits);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
 
@@ -263,6 +262,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                     <FormControl>
                       <Input
                         placeholder="Enter Weight (e.g., 100g, 150g)"
+                        type="number"
                         {...field}
                       />
                     </FormControl>
@@ -283,6 +283,42 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                       placeholder="Enter product description..."
                       className="min-h-[80px]"
                       {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="benefits"
+              values={form.getValues("benefits")}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Benefits</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter benefits description..."
+                      className="min-h-[80px]"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const bullet = "* ";
+                          const { selectionStart, selectionEnd, value } =
+                            e.target;
+                          const newValue =
+                            value.slice(0, selectionStart) +
+                            "\n" +
+                            bullet +
+                            value.slice(selectionEnd);
+
+                          // Update using RHF's onChange
+                          field.onChange(newValue);
+                          // Optionally move the caret, see note below
+                        }
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -337,11 +373,14 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="type"
-                rules={{ required: "Type is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Types *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isLoadingTypes}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -376,11 +415,14 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="category"
-                rules={{ required: "Category is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={isLoadingCategories}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -412,30 +454,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="batch"
-                rules={{ required: "Batch is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Batch *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        placeholder="Enter Batch(2025sep01, 2025sep02)"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value || "")}
-                        sx={{ gridColumn: "span 4" }}
-                        disabled
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
-
-            {/* Image Upload Section */}
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button
@@ -460,8 +479,8 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                   </>
                 ) : (
                   <>
-                    <span className="material-icons mr-2">save</span>
-                    Save Changes
+                    <span className="material-icons mr-2">edit</span>
+                    Edit Product
                   </>
                 )}
               </Button>

@@ -16,6 +16,8 @@ import StoreSettings from "@/pages/store-settings";
 import Categories from "@/pages/categories";
 import Types from "@/pages/types";
 import { ProtectedRoute } from "./lib/protected-route";
+import GroupedProducts from "@/pages/grouped-products";
+import CreateBatch from "@/pages/create-batch";
 
 function Router() {
   return (
@@ -23,6 +25,8 @@ function Router() {
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/products" component={Products} />
       <ProtectedRoute path="/stock" component={StockManagement} />
+      <ProtectedRoute path="/grouped-products" component={GroupedProducts} />
+      <ProtectedRoute path="/create-Stock" component={CreateBatch} />
       {/* <ProtectedRoute path="/coupons" component={Coupons} /> */}
       <ProtectedRoute path="/orders" component={Orders} />
       <ProtectedRoute path="/customers" component={Customers} />

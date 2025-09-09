@@ -30,7 +30,7 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-export default function EditProductDialog({ open, onOpenChange, productId }) {
+export default function ViewProduct({ open, onOpenChange, productId }) {
   const { toast } = useToast();
 
   const form = useForm({
@@ -44,7 +44,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       isActive: true,
       rprice: "",
       wprice: "",
-      batch: "",
+      benefits: "",
     },
   });
 
@@ -140,7 +140,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
             category: productData.category,
             type: productData.type,
             isActive: productData.isActive ?? true,
-            batch: productData.batch || "",
+            benefits: productData.benefits || "", // fix typo here
           });
         }
       } catch (error) {
@@ -160,7 +160,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
     fetchProduct();
     fetchTypes();
   }, [productId, toast, form]);
-  console.log(products);
 
   const updateProductMutation = useMutation({
     mutationFn: async (data) => {
@@ -173,7 +172,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       formData.append("type", data.type);
       formData.append("weight", data.weight);
       formData.append("isActive", data.isActive);
-      formData.append("batch", data.batch);
+      formData.append("benefits", data.benefits);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
 
@@ -228,11 +227,11 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <span className="material-icons mr-2">edit</span>
+            <span className="material-icons mr-2">view</span>
             View Product
           </DialogTitle>
           <DialogDescription>
-            View the details of the product.
+            View the details for the product.
           </DialogDescription>
         </DialogHeader>
 
@@ -242,12 +241,15 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="name"
-                rules={{ required: "Product name is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Product Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter product name" {...field} disabled />
+                      <Input
+                        placeholder="Enter product name"
+                        {...field}
+                        disabled
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -263,8 +265,9 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                     <FormControl>
                       <Input
                         placeholder="Enter Weight (e.g., 100g, 150g)"
-                        {...field}
+                        type="number"
                         disabled
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -283,8 +286,45 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                     <Textarea
                       placeholder="Enter product description..."
                       className="min-h-[80px]"
-                      {...field}
                       disabled
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="benefits"
+              values={form.getValues("benefits")}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Benefits</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Enter benefits description..."
+                      className="min-h-[80px]"
+                      value={field.value}
+                      disabled
+                      onChange={field.onChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          const bullet = "* ";
+                          const { selectionStart, selectionEnd, value } =
+                            e.target;
+                          const newValue =
+                            value.slice(0, selectionStart) +
+                            "\n" +
+                            bullet +
+                            value.slice(selectionEnd);
+
+                          // Update using RHF's onChange
+                          field.onChange(newValue);
+                          // Optionally move the caret, see note below
+                        }
+                      }}
                     />
                   </FormControl>
                   <FormMessage />
@@ -296,7 +336,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="rprice"
-                rules={{ required: "Retail price is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Retail Price *</FormLabel>
@@ -305,8 +344,8 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         type="number"
                         min="0"
                         placeholder="0"
-                        {...field}
                         disabled
+                        {...field}
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))
                         }
@@ -319,7 +358,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="wprice"
-                rules={{ required: "Wholesale price is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Wholesale Price *</FormLabel>
@@ -327,8 +365,8 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                       <Input
                         type="number"
                         placeholder="0"
-                        {...field}
                         disabled
+                        {...field}
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))
                         }
@@ -341,14 +379,17 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="type"
-                rules={{ required: "Type is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Types *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" disabled />
+                          <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -379,39 +420,18 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
               <FormField
                 control={form.control}
-                name="quantity"
-                rules={{ required: "Quantity is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantity *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        {...field}
-                        disabled
-                        onChange={(e) =>
-                          field.onChange(parseInt(e.target.value) || 0)
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="category"
-                rules={{ required: "Category is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" disabled />
+                          <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -440,30 +460,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="batch"
-                rules={{ required: "Batch is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Batch *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        placeholder="Enter Batch(2025sep01, 2025sep02)"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value || "")}
-                        sx={{ gridColumn: "span 4" }}
-                        disabled
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
-
-            {/* Image Upload Section */}
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button

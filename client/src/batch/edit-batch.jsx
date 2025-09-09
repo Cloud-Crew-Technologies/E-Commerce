@@ -30,7 +30,12 @@ import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-export default function EditProductDialog({ open, onOpenChange, productId }) {
+export default function EditBatchDialog({
+  open,
+  onOpenChange,
+  productId,
+  batch,
+}) {
   const { toast } = useToast();
 
   const form = useForm({
@@ -123,11 +128,11 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
-          `http://localhost:3000/api/products/get/${productId}`
+          `http://localhost:3000/api/batch/${batch}/products/${productId}`
         );
 
-        if (response.data && response.data.data) {
-          const productData = response.data.data;
+        const productData = response?.data?.data || response?.data?.product || response?.data;
+        if (productData && typeof productData === "object" && !Array.isArray(productData)) {
           console.log(productData);
           // Update form with product data
           form.reset({
@@ -179,7 +184,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
       // Send FormData to backend
       const response = await axios.put(
-        `http://localhost:3000/api/${batchID}/products/update/${productId}`,
+        `http://localhost:3000/api/batch/${batch}/products/update/${productId}`,
         formData,
         {
           headers: {
@@ -201,13 +206,13 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       window.location.reload();
     },
     onError: (error) => {
-      console.error("Edit product error:", error);
+      console.error("Add product error:", error);
       toast({
         title: "Error",
         description:
           error.response?.data?.message ||
           error.message ||
-          "Failed to edit product",
+          "Failed to add product",
         variant: "destructive",
       });
     },
@@ -215,7 +220,10 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
-    axios.put(`http://localhost:3000/api/products/update/${productId}`, data);
+    axios.put(
+      `http://localhost:3000/api/batch/${batch}/products/update/${productId}`,
+      data
+    );
   };
 
   const handleCancel = () => {
@@ -242,12 +250,11 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="name"
-                rules={{ required: "Product name is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Product Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter product name" {...field} />
+                      <Input placeholder="Enter product name" {...field} disabled />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -264,6 +271,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                       <Input
                         placeholder="Enter Weight (e.g., 100g, 150g)"
                         {...field}
+                        disabled
                       />
                     </FormControl>
                     <FormMessage />
@@ -283,6 +291,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                       placeholder="Enter product description..."
                       className="min-h-[80px]"
                       {...field}
+                      disabled
                     />
                   </FormControl>
                   <FormMessage />
@@ -294,7 +303,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="rprice"
-                rules={{ required: "Retail price is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Retail Price *</FormLabel>
@@ -304,6 +312,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         min="0"
                         placeholder="0"
                         {...field}
+                        disabled
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))
                         }
@@ -316,7 +325,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="wprice"
-                rules={{ required: "Wholesale price is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Wholesale Price *</FormLabel>
@@ -328,6 +336,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))
                         }
+                        disabled
                       />
                     </FormControl>
                     <FormMessage />
@@ -337,11 +346,10 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="type"
-                rules={{ required: "Type is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Types *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -358,7 +366,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                               key={type._id || type.id || type.name}
                               value={type.name}
                             >
-                              {type.name}
+                              {type.name || products.type}
                             </SelectItem>
                           ))
                         ) : (
@@ -399,11 +407,10 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="category"
-                rules={{ required: "Category is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} disabled>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -438,7 +445,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="batchID"
-                rules={{ required: "Batch is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Batch *</FormLabel>
