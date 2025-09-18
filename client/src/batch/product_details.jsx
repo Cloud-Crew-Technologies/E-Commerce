@@ -232,8 +232,8 @@ export default function EditProductDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <span className="material-icons mr-2">edit</span>
-            View Product
+            <span className="material-icons mr-2">visibility</span>
+            View Stock Details
           </DialogTitle>
           <DialogDescription>
             View the details of the product.

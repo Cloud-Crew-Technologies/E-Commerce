@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,70 +17,62 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
+import OrderDetailsDialog from "@/components/orders/vieworderdialog";
 
 export default function Orders() {
   const [search, setSearch] = useState("");
-  const [orders, setProduct] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedOrderID, setSelectedOrderID] = useState(null);
   const { toast } = useToast();
 
-  // const { data: orders, isLoading } = useQuery({
-  //   queryKey: ["/api/orders/getall", { search }],
-  // });
-
-  useEffect(() => {
-    fetchCategories();
-  }, [100]);
-
-  const fetchCategories = async () => {
-    try {
-      setIsLoading(true);
-      const response = await axios.get(
-        "http://localhost:3000/api/orders/get"
-      );
-
-      // Ensure we set an array - handle different response structures
-      const categoryData = response.data;
-      if (Array.isArray(categoryData)) {
-        setProduct(categoryData);
-      } else if (categoryData && Array.isArray(categoryData.data)) {
-        setProduct(categoryData.data);
-      } else {
-        console.warn("Unexpected response structure:", categoryData);
-        setProduct([]);
-      }
-    } catch (error) {
-      console.error("Error fetching Products:", error);
-      setProduct([]);
-      toast({
-        title: "Error",
-        description: "Failed to load Products",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  // Parse URL query parameters for filtering by customer name/email
+  const getQueryParam = (param) => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(param) || "";
   };
 
-  const updateOrderStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }) => {
-      await apiRequest("PATCH", `/api/orders/${orderId}`, { status });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      toast({
-        title: "Order status updated",
-        description: "Order status has been successfully updated.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  const filterName = getQueryParam("name").toLowerCase();
+  const filterEmail = getQueryParam("email").toLowerCase();
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get(
+          "http://localhost:3000/api/orders/get"
+        );
+        const data = Array.isArray(response.data)
+          ? response.data
+          : response.data?.data || [];
+        setOrders(data);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to load orders",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOrders();
+  }, [toast]);
+
+  const filteredOrders = orders.filter(
+    (order) =>
+      (order.customerName?.toLowerCase().includes(filterName) ||
+        filterName === "") &&
+      (order.customerEmail?.toLowerCase().includes(filterEmail) ||
+        filterEmail === "") &&
+      (order.id || true)
+  );
+  const onViewDetails = (orderID) => {
+    setSelectedOrderID(orderID);
+  };
+  const onCloseDetails = () => {
+    setSelectedOrderID(null);
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -98,116 +89,17 @@ export default function Orders() {
     }
   };
 
-  const filteredOrders = orders?.filter(
-    (order) =>
-      order.customerName.toLowerCase().includes(search.toLowerCase()) ||
-      order.id
-  );
-
   return (
     <div className="flex min-h-screen bg-grey-50">
       <Sidebar />
-
       <div className="ml-64 flex-1">
         <Header
           title="Order Management"
           subtitle="View and manage customer orders"
         />
-
         <main className="p-6">
-          {/* Order Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card className="material-elevation-2">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-grey-600">
-                      Total Orders
-                    </p>
-                    <p className="text-2xl font-bold text-grey-900">
-                      {isLoading ? "..." : orders?.length || 0}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <span className="material-icons text-blue-600">
-                      shopping_cart
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Order Stats - you can add as needed */}
 
-            <Card className="material-elevation-2">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-grey-600">
-                      Pending Orders
-                    </p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      {isLoading
-                        ? "..."
-                        : orders?.filter((o) => o.status === "pending")
-                            .length || 0}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-orange-100 rounded-full">
-                    <span className="material-icons text-orange-600">
-                      pending
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="material-elevation-2">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-grey-600">
-                      Shipped Orders
-                    </p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {isLoading
-                        ? "..."
-                        : orders?.filter((o) => o.status === "shipped")
-                            .length || 0}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <span className="material-icons text-blue-600">
-                      local_shipping
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="material-elevation-2">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-grey-600">
-                      Delivered Orders
-                    </p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {isLoading
-                        ? "..."
-                        : orders?.filter((o) => o.status === "delivered")
-                            .length || 0}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-green-100 rounded-full">
-                    <span className="material-icons text-green-600">
-                      check_circle
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Orders Table */}
           <Card className="material-elevation-2">
             <CardHeader>
               <CardTitle>Order List</CardTitle>
@@ -258,34 +150,7 @@ export default function Orders() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredOrders?.map((order) => (
-                      <TableRow key={order.id} className="hover:bg-grey-50">
-                        <TableCell className="font-medium text-primary-500">
-                          #{order._id}
-                        </TableCell>
-                        <TableCell className="text-grey-900">
-                          {order.customerName}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          ₹{order.total}
-                        </TableCell>
-                        <TableCell className="text-grey-600">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Button variant="outline" size="sm">
-                              View Details
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              Update Status
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {(!filteredOrders || filteredOrders.length === 0) && (
+                    {filteredOrders.length === 0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={6}
@@ -296,6 +161,41 @@ export default function Orders() {
                             : "No orders found"}
                         </TableCell>
                       </TableRow>
+                    ) : (
+                      filteredOrders.map((order) => (
+                        <TableRow
+                          key={order.orderID || order._id}
+                          className="hover:bg-grey-50"
+                        >
+                          <TableCell className="font-medium text-primary-500">
+                            #{order.orderID}
+                          </TableCell>
+                          <TableCell className="text-grey-900">
+                            {order.customerName}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            ₹{order.total}
+                          </TableCell>
+                          <TableCell className="text-grey-600">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(order.status)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => onViewDetails(order.orderID)}
+                              >
+                                View Details
+                              </Button>
+                              <Button variant="outline" size="sm">
+                                Update Status
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
                     )}
                   </TableBody>
                 </Table>
@@ -304,6 +204,13 @@ export default function Orders() {
           </Card>
         </main>
       </div>
+      {selectedOrderID && (
+        <OrderDetailsDialog
+          open={!!selectedOrderID}
+          onOpenChange={onCloseDetails}
+          orderID={selectedOrderID}
+        />
+      )}
     </div>
   );
 }

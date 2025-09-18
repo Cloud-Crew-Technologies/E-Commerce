@@ -59,7 +59,7 @@ export default function EditBatchDialog({
   const [isLoadingTypes, setIsLoadingTypes] = useState(true);
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState("");
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -131,8 +131,13 @@ export default function EditBatchDialog({
           `http://localhost:3000/api/batch/${batch}/products/${productId}`
         );
 
-        const productData = response?.data?.data || response?.data?.product || response?.data;
-        if (productData && typeof productData === "object" && !Array.isArray(productData)) {
+        const productData =
+          response?.data?.data || response?.data?.product || response?.data;
+        if (
+          productData &&
+          typeof productData === "object" &&
+          !Array.isArray(productData)
+        ) {
           console.log(productData);
           // Update form with product data
           form.reset({
@@ -147,6 +152,7 @@ export default function EditBatchDialog({
             isActive: productData.isActive ?? true,
             batchID: productData.batchID || "",
           });
+          setSelectedFile(productData.name || "");
         }
       } catch (error) {
         console.error("Failed to fetch product:", error);
@@ -169,6 +175,7 @@ export default function EditBatchDialog({
 
   const updateProductMutation = useMutation({
     mutationFn: async (data) => {
+      console.log(data.quantity);
       // Create FormData to send file along with other data
       const formData = new FormData();
       // Append all form fields
@@ -178,18 +185,18 @@ export default function EditBatchDialog({
       formData.append("type", data.type);
       formData.append("weight", data.weight);
       formData.append("isActive", data.isActive);
+      formData.append("quantity", data.quantity);
       formData.append("batchID", data.batchID);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
+      console.log(data.quantity);
 
-      // Send FormData to backend
+      // Send full FormData object to backend, NOT formData.quantity
       const response = await axios.put(
         `http://localhost:3000/api/batch/${batch}/products/update/${productId}`,
-        formData,
+        { quantity: data.quantity },
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "application/json" },
         }
       );
 
@@ -220,10 +227,6 @@ export default function EditBatchDialog({
 
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
-    axios.put(
-      `http://localhost:3000/api/batch/${batch}/products/update/${productId}`,
-      data
-    );
   };
 
   const handleCancel = () => {
@@ -237,10 +240,10 @@ export default function EditBatchDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <span className="material-icons mr-2">edit</span>
-            Edit Product
+            Update Stock
           </DialogTitle>
           <DialogDescription>
-            Enter the details for the new product.
+            Update the stock for this {selectedFile}.
           </DialogDescription>
         </DialogHeader>
 
@@ -254,7 +257,11 @@ export default function EditBatchDialog({
                   <FormItem>
                     <FormLabel>Product Name *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Enter product name" {...field} disabled />
+                      <Input
+                        placeholder="Enter product name"
+                        {...field}
+                        disabled
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -349,7 +356,11 @@ export default function EditBatchDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Types *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -410,7 +421,11 @@ export default function EditBatchDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -485,12 +500,12 @@ export default function EditBatchDialog({
                     <span className="material-icons mr-2 animate-spin">
                       refresh
                     </span>
-                    Editing Product...
+                    Updating Stock...
                   </>
                 ) : (
                   <>
                     <span className="material-icons mr-2">save</span>
-                    Save Changes
+                    Update Changes
                   </>
                 )}
               </Button>

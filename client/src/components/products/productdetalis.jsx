@@ -227,7 +227,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            <span className="material-icons mr-2">view</span>
+            <span className="material-icons mr-2">visibility</span>
             View Product
           </DialogTitle>
           <DialogDescription>

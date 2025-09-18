@@ -752,7 +752,7 @@ export default function StockManagement() {
                               size="sm"
                               onClick={() => handleEditProduct(product)}
                             >
-                              Add stock
+                              Update stock
                             </Button>
                             <Button
                               variant="outline"

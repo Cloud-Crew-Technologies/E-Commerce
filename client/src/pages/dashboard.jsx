@@ -72,7 +72,7 @@ export default function Dashboard() {
   const { data: lowStockItems, isLoading: stockLoading } = useQuery({
     queryKey: ["/api/products", "low-stock"],
   });
-const totalSum = recentOrders.reduce((acc, curr) => acc + curr.total, 0);
+  const totalSum = recentOrders.reduce((acc, curr) => acc + curr.total, 0);
   const getStatusBadge = (status) => {
     switch (status) {
       case "delivered":
@@ -210,7 +210,7 @@ const totalSum = recentOrders.reduce((acc, curr) => acc + curr.total, 0);
                         {recentOrders?.map((order) => (
                           <TableRow key={order.id} className="hover:bg-grey-50">
                             <TableCell className="font-medium text-primary-500">
-                              #{order._id}
+                              #{order.orderID}
                             </TableCell>
                             <TableCell>{order.customerName}</TableCell>
                             <TableCell>₹{order.total}</TableCell>
@@ -255,18 +255,6 @@ const totalSum = recentOrders.reduce((acc, curr) => acc + curr.total, 0);
                     <div className="flex items-center">
                       <span className="material-icons mr-3">add</span>
                       <span className="font-medium">Add Product</span>
-                    </div>
-                    <span className="material-icons">chevron_right</span>
-                  </Button>
-
-                  <Button
-                    onClick={handleCreateCouponClick}
-                    variant="outline"
-                    className="w-full justify-between bg-success-light hover:bg-green-100 text-green-700 border-green-200"
-                  >
-                    <div className="flex items-center">
-                      <span className="material-icons mr-3">local_offer</span>
-                      <span className="font-medium">Create Coupon</span>
                     </div>
                     <span className="material-icons">chevron_right</span>
                   </Button>
