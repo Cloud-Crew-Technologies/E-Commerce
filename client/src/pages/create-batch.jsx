@@ -68,7 +68,7 @@ export default function CreateBatch() {
   useEffect(() => {
     if (step === 2) {
       axios
-        .get("http://localhost:3000/api/products/get")
+        .get("https://ecommerceapi.skillhiveinnovations.com//api/products/get")
         .then((res) => res.data)
         .then((data) => {
           const list = Array.isArray(data?.products?.data)
@@ -159,7 +159,7 @@ export default function CreateBatch() {
         })),
       };
 
-      await axios.post("http://localhost:3000/api/batch/create", payload);
+      await axios.post("https://ecommerceapi.skillhiveinnovations.com//api/batch/create", payload);
       toast({ title: "Stock added successfully" });
       setOpenConfirm(false);
       setStep(1);

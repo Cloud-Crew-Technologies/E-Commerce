@@ -40,7 +40,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
     const fetchCouponDetails = async () => {
       try {
         const response = await axios.get(
-          `http://localhost:3000/api/coupons/get/${couponDataID}`
+          `https://ecommerceapi.skillhiveinnovations.com//api/coupons/get/${couponDataID}`
         );
 
         if (response.data && response.data.data) {

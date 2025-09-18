@@ -37,7 +37,7 @@ export default function Dashboard() {
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get("http://localhost:3000/api/orders/get");
+      const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com//api/orders/get");
 
       // Ensure we set an array - handle different response structures
       const categoryData = response.data;

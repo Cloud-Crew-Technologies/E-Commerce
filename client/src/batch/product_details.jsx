@@ -66,7 +66,7 @@ export default function EditProductDialog({
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "http://localhost:3000/api/categories/get"
+          "https://ecommerceapi.skillhiveinnovations.com//api/categories/get"
         );
 
         if (
@@ -96,7 +96,7 @@ export default function EditProductDialog({
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("http://localhost:3000/api/types/get");
+        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com//api/types/get");
 
         if (
           response.data &&
@@ -127,7 +127,7 @@ export default function EditProductDialog({
 
       try {
         setIsLoadingProducts(true);
-        const url = `http://localhost:3000/api/batch/${batch}/products/${productId}`;
+        const url = `https://ecommerceapi.skillhiveinnovations.com//api/batch/${batch}/products/${productId}`;
         const response = await axios.get(url);
 
         if (response.data && response.data.data) {
@@ -183,7 +183,7 @@ export default function EditProductDialog({
 
       // Send FormData to backend
       const response = await axios.put(
-        `http://localhost:3000/api/products/update/${productId}`,
+        `https://ecommerceapi.skillhiveinnovations.com//api/products/update/${productId}`,
         formData,
         {
           headers: {
@@ -219,7 +219,7 @@ export default function EditProductDialog({
 
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
-    axios.put(`http://localhost:3000/api/products/update/${productId}`, data);
+    axios.put(`https://ecommerceapi.skillhiveinnovations.com//api/products/update/${productId}`, data);
   };
 
   const handleCancel = () => {

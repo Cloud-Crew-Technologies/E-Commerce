@@ -66,7 +66,7 @@ export default function EditBatchDialog({
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "http://localhost:3000/api/categories/get"
+          "https://ecommerceapi.skillhiveinnovations.com//api/categories/get"
         );
 
         if (
@@ -96,7 +96,7 @@ export default function EditBatchDialog({
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("http://localhost:3000/api/types/get");
+        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com//api/types/get");
 
         if (
           response.data &&
@@ -128,7 +128,7 @@ export default function EditBatchDialog({
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
-          `http://localhost:3000/api/batch/${batch}/products/${productId}`
+          `https://ecommerceapi.skillhiveinnovations.com//api/batch/${batch}/products/${productId}`
         );
 
         const productData =
@@ -193,7 +193,7 @@ export default function EditBatchDialog({
 
       // Send full FormData object to backend, NOT formData.quantity
       const response = await axios.put(
-        `http://localhost:3000/api/batch/${batch}/products/update/${productId}`,
+        `https://ecommerceapi.skillhiveinnovations.com//api/batch/${batch}/products/update/${productId}`,
         { quantity: data.quantity },
         {
           headers: { "Content-Type": "application/json" },

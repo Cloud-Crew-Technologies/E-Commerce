@@ -66,7 +66,7 @@ export default function StockManagement() {
   const fetchTypes = async () => {
     try {
       setIsLoadingTypes(true);
-      const response = await axios.get("http://localhost:3000/api/types/get");
+      const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com//api/types/get");
 
       if (
         response.data &&
@@ -94,7 +94,7 @@ export default function StockManagement() {
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get("http://localhost:3000/api/batch/get");
+      const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com//api/batch/get");
 
       const payload = response.data;
       console.log("Fetched Batches:", payload);
@@ -130,7 +130,7 @@ export default function StockManagement() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "http://localhost:3000/api/categories/get"
+        "https://ecommerceapi.skillhiveinnovations.com//api/categories/get"
       );
       const categoryData = response.data;
       console.log(categoriesData);

@@ -77,7 +77,7 @@ export default function Customers() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "http://localhost:3000/api/customers/get"
+          "https://ecommerceapi.skillhiveinnovations.com//api/customers/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
