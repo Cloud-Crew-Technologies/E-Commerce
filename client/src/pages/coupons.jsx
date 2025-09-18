@@ -34,7 +34,7 @@ export default function Coupons() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://ecommerceapi.skillhiveinnovations.com//api/coupons/getall"
+        "https://ecommerceapi.skillhiveinnovations.com/api/coupons/getall"
       );
 
       const couponsData = response.data;

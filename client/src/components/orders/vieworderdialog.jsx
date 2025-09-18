@@ -31,7 +31,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       try {
         // Adjust endpoint as per your API - assuming this returns full order with product details
         const response = await axios.get(
-          `https://ecommerceapi.skillhiveinnovations.com//api/orders/orderbyID/${orderID}`
+          `https://ecommerceapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
         );
         if (response.data && response.data.data) {
           setOrderDetails(response.data.data);

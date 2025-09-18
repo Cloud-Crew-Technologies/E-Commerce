@@ -40,7 +40,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com//api/orders/get"
+          "https://ecommerceapi.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
