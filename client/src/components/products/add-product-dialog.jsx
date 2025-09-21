@@ -36,6 +36,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
   const form = useForm({
     defaultValues: {
       name: "",
+      productID: "",
       description: "",
       type: "",
       quantity: "",
@@ -90,7 +91,9 @@ export default function AddProductDialog({ open, onOpenChange }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get(
+          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+        );
 
         if (
           response.data &&
@@ -160,6 +163,10 @@ export default function AddProductDialog({ open, onOpenChange }) {
       const formData = new FormData(); // Generate a random ID for ProductId
       // Append all form fields
       formData.append("name", data.name);
+      formData.append(
+        "productID",
+        data.name + data.category + data.type + Date.now()
+      );
       formData.append("description", data.description);
       formData.append("category", data.category);
       formData.append("type", data.type);

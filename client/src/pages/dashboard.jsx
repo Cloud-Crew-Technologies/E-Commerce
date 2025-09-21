@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
+import { toast } from "../hooks/use-toast";
 import axios from "axios";
 
 export default function Dashboard() {
@@ -37,7 +38,9 @@ export default function Dashboard() {
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/orders/get");
+      const response = await axios.get(
+        "https://ecommerceapi.skillhiveinnovations.com/api/orders/get"
+      );
 
       // Ensure we set an array - handle different response structures
       const categoryData = response.data;

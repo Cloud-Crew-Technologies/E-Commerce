@@ -145,6 +145,7 @@ export default function CreateBatch() {
         batch,
         products: selectedProducts.map((p) => ({
           name: p.name,
+          productID: p.productID,
           expiryDate: p.expiryDate,
           description: p.description,
           benefits: p.benefits,
@@ -159,7 +160,10 @@ export default function CreateBatch() {
         })),
       };
 
-      await axios.post("https://ecommerceapi.skillhiveinnovations.com/api/batch/create", payload);
+      await axios.post(
+        "https://ecommerceapi.skillhiveinnovations.com/api/batch/create",
+        payload
+      );
       toast({ title: "Stock added successfully" });
       setOpenConfirm(false);
       setStep(1);

@@ -18,12 +18,16 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 import OrderDetailsDialog from "@/components/orders/vieworderdialog";
+import CustomerDetailsDialog from "@/components/orders/customerdetailsdialog";
+import UpdateStatusDialog from "@/components/orders/updatestatusdialog";
 
 export default function Orders() {
   const [search, setSearch] = useState("");
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedOrderID, setSelectedOrderID] = useState(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [selectedOrderForUpdate, setSelectedOrderForUpdate] = useState(null);
   const { toast } = useToast();
 
   // Parse URL query parameters for filtering by customer name/email
@@ -31,6 +35,7 @@ export default function Orders() {
     const params = new URLSearchParams(window.location.search);
     return params.get(param) || "";
   };
+  const baseurl = "https://ecommerceapi.skillhiveinnovations.com";
 
   const filterName = getQueryParam("name").toLowerCase();
   const filterEmail = getQueryParam("email").toLowerCase();
@@ -74,16 +79,59 @@ export default function Orders() {
     setSelectedOrderID(null);
   };
 
+  const onViewCustomerDetails = (customerId) => {
+    setSelectedCustomerId(customerId);
+  };
+  const onCloseCustomerDetails = () => {
+    setSelectedCustomerId(null);
+  };
+
+  const onUpdateStatus = (order) => {
+    setSelectedOrderForUpdate(order);
+  };
+  const onCloseStatusUpdate = () => {
+    setSelectedOrderForUpdate(null);
+  };
+
+  const onStatusUpdated = () => {
+    // Refresh the orders list after status update
+    const fetchOrders = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get(
+          "https://ecommerceapi.skillhiveinnovations.com/api/orders/get"
+        );
+        const data = Array.isArray(response.data)
+          ? response.data
+          : response.data?.data || [];
+        setOrders(data);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to refresh orders",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchOrders();
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
+      case "ordered":
+        return <Badge className="status-chip status-pending">Ordered</Badge>;
+      case "processing":
+        return <Badge className="status-chip status-pending">Processing</Badge>;
+      case "shipped":
+        return <Badge className="status-chip status-active">Shipped</Badge>;
       case "delivered":
         return (
           <Badge className="status-chip status-delivered">Delivered</Badge>
         );
-      case "pending":
-        return <Badge className="status-chip status-pending">Processing</Badge>;
-      case "shipped":
-        return <Badge className="status-chip status-active">Shipped</Badge>;
+      case "cancelled":
+        return <Badge className="status-chip status-pending">Cancelled</Badge>;
       default:
         return <Badge className="status-chip status-pending">{status}</Badge>;
     }
@@ -189,9 +237,22 @@ export default function Orders() {
                               >
                                 View Details
                               </Button>
-                              <Button variant="outline" size="sm">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => onUpdateStatus(order)}
+                              >
                                 Update Status
                               </Button>
+                              {(order.customerId || order.customerEmail) && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => onViewCustomerDetails(order.customerId || order.customerEmail)}
+                                >
+                                  View Customer
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -209,6 +270,23 @@ export default function Orders() {
           open={!!selectedOrderID}
           onOpenChange={onCloseDetails}
           orderID={selectedOrderID}
+        />
+      )}
+
+      {selectedCustomerId && (
+        <CustomerDetailsDialog
+          open={!!selectedCustomerId}
+          onOpenChange={onCloseCustomerDetails}
+          customerId={selectedCustomerId}
+        />
+      )}
+
+      {selectedOrderForUpdate && (
+        <UpdateStatusDialog
+          open={!!selectedOrderForUpdate}
+          onOpenChange={onCloseStatusUpdate}
+          order={selectedOrderForUpdate}
+          onStatusUpdated={onStatusUpdated}
         />
       )}
     </div>
