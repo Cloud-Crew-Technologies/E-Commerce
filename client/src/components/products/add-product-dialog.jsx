@@ -184,7 +184,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
       // Send FormData to backend
       const response = await axios.post(
-        "https://ecommerceapi.skillhiveinnovations.com/api/products/create",
+        "http://localhost:3001/api/products/create",
         formData,
         {
           headers: {
@@ -312,7 +312,26 @@ export default function AddProductDialog({ open, onOpenChange }) {
                       placeholder="Enter benefits description..."
                       className="min-h-[80px]"
                       value={field.value}
-                      onChange={field.onChange}
+                      onChange={(e) => {
+                        let value = e.target.value;
+
+                        // If the field is empty and user starts typing, add initial bullet
+                        if (!field.value && value && !value.startsWith("* ")) {
+                          value = "* " + value;
+                        }
+
+                        field.onChange(value);
+                      }}
+                      onFocus={(e) => {
+                        // Add initial bullet point if field is empty when focused
+                        if (!field.value) {
+                          field.onChange("* ");
+                          // Set cursor position after the bullet
+                          setTimeout(() => {
+                            e.target.setSelectionRange(2, 2);
+                          }, 0);
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -327,7 +346,14 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
                           // Update using RHF's onChange
                           field.onChange(newValue);
-                          // Optionally move the caret, see note below
+
+                          // Move cursor after the new bullet point
+                          setTimeout(() => {
+                            e.target.setSelectionRange(
+                              selectionStart + bullet.length + 1,
+                              selectionStart + bullet.length + 1
+                            );
+                          }, 0);
                         }
                       }}
                     />
