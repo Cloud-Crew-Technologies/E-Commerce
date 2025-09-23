@@ -23,6 +23,7 @@ export const insertStoreSettingsSchema = z.object({
   contactEmail: z.string().email("Invalid email").optional().nullable().default(""),
   contactPhone: z.string().optional().nullable().default(""),
   address: z.string().optional().nullable().default(""),
+  shipping: z.string().optional().nullable().default(""),
 })
 
 // Validation functions for server-side use

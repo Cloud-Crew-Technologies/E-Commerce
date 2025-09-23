@@ -161,7 +161,7 @@ export default function CreateBatch() {
       };
 
       await axios.post(
-        "https://ecommerceapi.skillhiveinnovations.com/api/batch/create",
+        "http://localhost:3001/api/batch/create",
         payload
       );
       toast({ title: "Stock added successfully" });

@@ -47,6 +47,8 @@ export default function AddProductDialog({ open, onOpenChange }) {
       wprice: "",
       expiryDate: "",
       benefits: "",
+      tax: 0,
+      taxValue: 0,
     },
   });
 
@@ -176,6 +178,8 @@ export default function AddProductDialog({ open, onOpenChange }) {
       formData.append("rprice", data.rprice);
       formData.append("expiryDate", data.expiryDate);
       formData.append("benefits", data.benefits);
+      formData.append("tax", data.tax);
+      formData.append("taxValue", (data.tax / 100) * data.rprice);
 
       // Append image file if selected
       if (selectedFile) {
@@ -479,6 +483,31 @@ export default function AddProductDialog({ open, onOpenChange }) {
                             first
                           </SelectItem>
                         )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tax"
+                rules={{ required: "Tax rate is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tax Rate *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tax rate" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="5">5%</SelectItem>
+                        <SelectItem value="12">12%</SelectItem>
+                        <SelectItem value="18">18%</SelectItem>
+                        <SelectItem value="28">28%</SelectItem>
+                        <SelectItem value="4">40%</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

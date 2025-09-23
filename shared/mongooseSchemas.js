@@ -64,7 +64,8 @@ export const StoreSettingsSchema = new Schema({
   description: { type: String },
   address: { type: String },
   contactEmail: { type: String },
-  contactPhone: { type: String }
+  contactPhone: { type: String },
+  shipping: { type: String }
 });
 
 // Create and export Mongoose models

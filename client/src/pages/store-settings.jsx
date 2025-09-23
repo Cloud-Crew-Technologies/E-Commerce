@@ -40,22 +40,23 @@ export default function StoreSettings() {
   const form = useForm({
     resolver: zodResolver(insertStoreSettingsSchema),
     defaultValues: {
-      storeName: settings?.storeName||"",
+      storeName: settings?.storeName || "",
       description: "",
       contactEmail: "",
       contactPhone: "",
       address: "",
+      shipping: "",
     },
   });
   useEffect(() => {
     fetchSettings();
-  }, []); 
+  }, []);
 
   const fetchSettings = async () => {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        `https://ecommerceapi.skillhiveinnovations.com/api/store-settings/get/${storename}`
+        `http://localhost:3001/api/store-settings/get/${storename}` 
       );
 
       if (response.data.success && response.data.data) {
@@ -69,13 +70,14 @@ export default function StoreSettings() {
           contactEmail: settingsData.contactEmail || "",
           contactPhone: settingsData.contactPhone || "",
           address: settingsData.address || "",
+          shipping: settingsData.shipping || "",
         });
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
       setSettings(null);
       toast({
-        title: "Error", 
+        title: "Error",
         description: "Failed to load store settings",
         variant: "destructive",
       });
@@ -86,6 +88,7 @@ export default function StoreSettings() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data) => {
+      console.log(data);
       const response = await apiRequest(
         "PUT",
         `/api/store-settings/put/${settings._id}`,
@@ -235,6 +238,24 @@ export default function StoreSettings() {
                               </FormItem>
                             )}
                           />
+                          <FormField
+                            control={form.control}
+                            name="shipping"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Shipping Amount</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="text"
+                                    placeholder="₹ 80"
+                                    className="border border-grey-300 rounded-md p-2 bg-grey-50"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
 
                         <FormField
@@ -282,7 +303,6 @@ export default function StoreSettings() {
                 )}
               </CardContent>
             </Card>
-
 
             <Card className="material-elevation-2 bg-lightblue-50">
               <CardHeader>
