@@ -25,7 +25,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
   const [productTaxValues, setProductTaxValues] = useState({});
 
   // Get shipping cost and user data from storage
-  const shippings = sessionStorage.getItem("shipping") || "50"; // Default shipping cost
+  const shippings = sessionStorage.getItem("shipping") || "80"; // Default shipping cost
   const users = localStorage.getItem("user");
   const userData = users ? JSON.parse(users) : null;
   const userState = userData?.state || "";
