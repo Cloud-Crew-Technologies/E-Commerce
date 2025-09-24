@@ -36,15 +36,18 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
   const form = useForm({
     defaultValues: {
       name: "",
+      productID: "",
       description: "",
       type: "",
-      quantity: "",
       category: "",
       weight: "",
       isActive: true,
       rprice: "",
       wprice: "",
       benefits: "",
+      expiryDate: "",
+      tax: 0,
+      taxValue: 0,
     },
   });
 
@@ -55,6 +58,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -91,7 +95,9 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get(
+          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+        );
 
         if (
           response.data &&
@@ -129,19 +135,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
         if (response.data && response.data.data) {
           const productData = response.data.data;
           console.log(productData);
-          // Update form with product data
-          form.reset({
-            name: productData.name || "",
-            description: productData.description || "",
-            rprice: (productData.rprice || 0).toString(),
-            wprice: (productData.wprice || 0).toString(),
-            weight: (productData.weight || 0).toString(),
-            quantity: productData.quantity || 0,
-            category: productData.category,
-            type: productData.type,
-            isActive: productData.isActive ?? true,
-            benefits: productData.benefits || "", // fix typo here
-          });
+          setProducts(productData);
         }
       } catch (error) {
         console.error("Failed to fetch product:", error);
@@ -159,7 +153,94 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
     fetchCategories();
     fetchProduct();
     fetchTypes();
-  }, [productId, toast, form]);
+  }, [productId, toast]);
+
+  // Reset form when product data and categories/types are loaded
+  useEffect(() => {
+    if (
+      products &&
+      !isLoadingCategories &&
+      !isLoadingTypes &&
+      !isLoadingProducts
+    ) {
+      const productData = products;
+
+      console.log("Setting form data:", {
+        category: productData.category,
+        type: productData.type,
+        tax: productData.tax,
+        availableCategories: categories.map((c) => c.name),
+        availableTypes: types.map((t) => t.name),
+      });
+
+      // Update form with product data
+      setTimeout(() => {
+        form.reset({
+          name: productData.name || "",
+          productID: productData.productID || "",
+          description: productData.description || "",
+          rprice: (productData.rprice || 0).toString(),
+          wprice: (productData.wprice || 0).toString(),
+          weight: (productData.weight || 0).toString(),
+          category: productData.category || "",
+          type: productData.type || "",
+          isActive: productData.isActive ?? true,
+          benefits: productData.benefits || "",
+          expiryDate: productData.expiryDate || "",
+          tax: productData.tax ? productData.tax.toString() : "0",
+          taxValue: productData.taxValue || 0,
+        });
+      }, 100);
+
+      // Set existing image if available
+      if (productData.imageUrl) {
+        setImagePreview(productData.imageUrl);
+      }
+    }
+  }, [
+    products,
+    isLoadingCategories,
+    isLoadingTypes,
+    isLoadingProducts,
+    form,
+    categories,
+    types,
+  ]);
+
+  // Handle file selection
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (limit to 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const updateProductMutation = useMutation({
     mutationFn: async (data) => {
@@ -167,6 +248,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       const formData = new FormData();
       // Append all form fields
       formData.append("name", data.name);
+      formData.append("productID", data.productID);
       formData.append("description", data.description);
       formData.append("category", data.category);
       formData.append("type", data.type);
@@ -175,6 +257,14 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       formData.append("benefits", data.benefits);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
+      formData.append("expiryDate", data.expiryDate);
+      formData.append("tax", data.tax);
+      formData.append("taxValue", (data.tax / 100) * data.rprice);
+
+      // Append image file if selected
+      if (selectedFile) {
+        formData.append("image", selectedFile);
+      }
 
       // Send FormData to backend
       const response = await axios.put(
@@ -200,13 +290,13 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       window.location.reload();
     },
     onError: (error) => {
-      console.error("Add product error:", error);
+      console.error("Edit product error:", error);
       toast({
         title: "Error",
         description:
           error.response?.data?.message ||
           error.message ||
-          "Failed to add product",
+          "Failed to edit product",
         variant: "destructive",
       });
     },
@@ -214,11 +304,16 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
-    axios.put(`https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`, data);
+    axios.put(
+      `https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`,
+      data
+    );
   };
 
   const handleCancel = () => {
     form.reset();
+    setSelectedFile(null);
+    setImagePreview(null);
     onOpenChange(false);
   };
 
@@ -231,7 +326,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
             Edit Product
           </DialogTitle>
           <DialogDescription>
-            Enter the details for the new product.
+            Edit the product details. Update any field as needed.
           </DialogDescription>
         </DialogHeader>
 
@@ -289,10 +384,10 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
               name="benefits"
-              values={form.getValues("benefits")}
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Benefits</FormLabel>
@@ -301,7 +396,26 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                       placeholder="Enter benefits description..."
                       className="min-h-[80px]"
                       value={field.value}
-                      onChange={field.onChange}
+                      onChange={(e) => {
+                        let value = e.target.value;
+
+                        // If the field is empty and user starts typing, add initial bullet
+                        if (!field.value && value && !value.startsWith("* ")) {
+                          value = "* " + value;
+                        }
+
+                        field.onChange(value);
+                      }}
+                      onFocus={(e) => {
+                        // Add initial bullet point if field is empty when focused
+                        if (!field.value) {
+                          field.onChange("* ");
+                          // Set cursor position after the bullet
+                          setTimeout(() => {
+                            e.target.setSelectionRange(2, 2);
+                          }, 0);
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           e.preventDefault();
@@ -316,7 +430,14 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
                           // Update using RHF's onChange
                           field.onChange(newValue);
-                          // Optionally move the caret, see note below
+
+                          // Move cursor after the new bullet point
+                          setTimeout(() => {
+                            e.target.setSelectionRange(
+                              selectionStart + bullet.length + 1,
+                              selectionStart + bullet.length + 1
+                            );
+                          }, 0);
                         }
                       }}
                     />
@@ -373,17 +494,23 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
               <FormField
                 control={form.control}
                 name="type"
+                rules={{ required: "Type is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Types *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value}
+                      value={field.value || ""}
                       disabled={isLoadingTypes}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
+                          <SelectValue
+                            placeholder="Select type"
+                            className={
+                              field.value ? "" : "text-muted-foreground"
+                            }
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -412,20 +539,27 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                 )}
               />
 
+
               <FormField
                 control={form.control}
                 name="category"
+                rules={{ required: "Category is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value}
+                      value={field.value || ""}
                       disabled={isLoadingCategories}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue
+                            placeholder="Select category"
+                            className={
+                              field.value ? "" : "text-muted-foreground"
+                            }
+                          />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -454,6 +588,91 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="tax"
+                rules={{ required: "Tax rate is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tax Rate *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value?.toString() || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder="Select tax rate"
+                            className={
+                              field.value ? "" : "text-muted-foreground"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="5">5%</SelectItem>
+                        <SelectItem value="12">12%</SelectItem>
+                        <SelectItem value="18">18%</SelectItem>
+                        <SelectItem value="28">28%</SelectItem>
+                        <SelectItem value="4">40%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Image Upload Section */}
+            <div className="space-y-2">
+              <FormLabel>Product Image</FormLabel>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="mb-2"
+                />
+
+                {imagePreview ? (
+                  <div className="space-y-2">
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      className="max-h-40 w-full object-cover rounded"
+                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">
+                        {selectedFile
+                          ? `Selected: ${selectedFile?.name}`
+                          : "Current image"}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setImagePreview(null);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <span className="material-icons text-gray-400 text-4xl mb-2">
+                      cloud_upload
+                    </span>
+                    <p className="text-sm text-gray-600">
+                      Select an image file to upload
+                    </p>
+                    <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end space-x-2 pt-4">
@@ -475,12 +694,12 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                     <span className="material-icons mr-2 animate-spin">
                       refresh
                     </span>
-                    Editing Product...
+                    Updating Product...
                   </>
                 ) : (
                   <>
-                    <span className="material-icons mr-2">edit</span>
-                    Edit Product
+                    <span className="material-icons mr-2">save</span>
+                    Save Changes
                   </>
                 )}
               </Button>

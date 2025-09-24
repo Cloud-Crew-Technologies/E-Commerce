@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import EditProductDialog from "./producteditwoqty";
 import { useState } from "react";
+import { toast } from "@/hooks/use-toast";
 
 export default function ProductCard({ product, onEdit, onDelete }) {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editProductId, setEditProductId] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const getStockStatusClasses = () => {
     if (product.quantity === 0) {
@@ -25,6 +27,90 @@ export default function ProductCard({ product, onEdit, onDelete }) {
   const edit = (id) => {
     setIsAddDialogOpen(true);
     setEditProductId(id);
+  };
+
+  // Function to check if product can be deleted
+  const checkProductDeletion = async (productId) => {
+    setIsDeleting(true);
+
+    try {
+      // Check batch quantities
+      const batchResponse = await fetch(
+        "https://ecommerceapi.skillhiveinnovations.com/api/batch/get"
+      );
+      const batchData = await batchResponse.json();
+
+      if (batchData.success && batchData.data) {
+        // Check if product has any quantity in any batch
+        const hasQuantity = batchData.data.some((batch) =>
+          batch.products.some(
+            (p) => p.productID === productId && p.quantity > 0
+          )
+        );
+
+        if (hasQuantity) {
+          toast({
+            title: "Cannot Delete Product",
+            description:
+              "Product still has quantity in inventory.",
+            variant: "destructive",
+          });
+          setIsDeleting(false);
+          return;
+        }
+      }
+
+      // Check active orders
+      const ordersResponse = await fetch(
+        "https://ecommerceapi.skillhiveinnovations.com/api/orders/get"
+      );
+      const ordersData = await ordersResponse.json();
+
+      if (ordersData.success && ordersData.data) {
+        // Check if product exists in any active orders (ordered, processing, shipped)
+        const activeStatuses = ["ordered", "processing", "shipped"];
+        const isInActiveOrder = ordersData.data.some(
+          (order) =>
+            activeStatuses.includes(order.status.toLowerCase()) &&
+            order.items.some((item) => item.productID === productId)
+        );
+
+        if (isInActiveOrder) {
+          toast({
+            title: "Cannot Delete Product",
+            description:
+              "Product is part of active orders (ordered/processing/shipped). Please wait for orders to be completed.",
+            variant: "destructive",
+          });
+          setIsDeleting(false);
+          return;
+        }
+      }
+
+      // If all checks pass, proceed with deletion
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this product? This action cannot be undone."
+      );
+      if (confirmDelete) {
+        onDelete(productId);
+      }
+    } catch (error) {
+      console.error("Error checking product deletion validity:", error);
+      toast({
+        title: "Error",
+        description: "Error checking product status. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDelete = () => {
+    const productId = product?.productID || product?._id || product?.id;
+    if (productId) {
+      checkProductDeletion(productId);
+    }
   };
 
   return (
@@ -59,9 +145,6 @@ export default function ProductCard({ product, onEdit, onDelete }) {
               {product.type}
             </span>
           )}
-          {/* <span className={`px-2 py-0.5 rounded-full border ${getStockStatusClasses()}`}>
-            {getStockText()}
-          </span> */}
         </div>
 
         {/* Prices */}
@@ -89,11 +172,12 @@ export default function ProductCard({ product, onEdit, onDelete }) {
             Edit
           </Button>
           <Button
-            onClick={() => onDelete(product?._id || product?.id)}
+            onClick={handleDelete}
             variant="destructive"
             className="flex-1 py-2 rounded text-sm sm:text-base"
+            disabled={isDeleting}
           >
-            Delete
+            {isDeleting ? "Checking..." : "Delete"}
           </Button>
         </div>
       </div>

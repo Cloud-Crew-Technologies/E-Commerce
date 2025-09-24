@@ -52,7 +52,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
   const [types, setTypes] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [isLoadingTypes, setIsLoadingTypes] = useState(true);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(null);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
 
@@ -91,7 +91,9 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get(
+          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+        );
 
         if (
           response.data &&
@@ -129,19 +131,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
         if (response.data && response.data.data) {
           const productData = response.data.data;
           console.log(productData);
-          // Update form with product data
-          form.reset({
-            name: productData.name || "",
-            description: productData.description || "",
-            rprice: (productData.rprice || 0).toString(),
-            wprice: (productData.wprice || 0).toString(),
-            weight: (productData.weight || 0).toString(),
-            quantity: productData.quantity || 0,
-            category: productData.category,
-            type: productData.type,
-            isActive: productData.isActive ?? true,
-            benefits: productData.benefits || "", // fix typo here
-          });
+          setProducts(productData);
         }
       } catch (error) {
         console.error("Failed to fetch product:", error);
@@ -159,7 +149,33 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
     fetchCategories();
     fetchProduct();
     fetchTypes();
-  }, [productId, toast, form]);
+  }, [productId, toast]);
+
+  // Reset form when product data and categories/types are loaded
+  useEffect(() => {
+    if (
+      products &&
+      !isLoadingCategories &&
+      !isLoadingTypes &&
+      !isLoadingProducts
+    ) {
+      const productData = products;
+
+      // Update form with product data after all data is loaded
+      form.reset({
+        name: productData.name || "",
+        description: productData.description || "",
+        rprice: (productData.rprice || 0).toString(),
+        wprice: (productData.wprice || 0).toString(),
+        weight: (productData.weight || 0).toString(),
+        quantity: productData.quantity || 0,
+        category: productData.category || "",
+        type: productData.type || "",
+        isActive: productData.isActive ?? true,
+        benefits: productData.benefits || "",
+      });
+    }
+  }, [products, isLoadingCategories, isLoadingTypes, isLoadingProducts, form]);
 
   const updateProductMutation = useMutation({
     mutationFn: async (data) => {
@@ -214,7 +230,10 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
 
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
-    axios.put(`https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`, data);
+    axios.put(
+      `https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`,
+      data
+    );
   };
 
   const handleCancel = () => {
@@ -384,7 +403,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
                     <FormLabel>Types *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value}
+                      value={field.value || ""}
                       disabled
                     >
                       <FormControl>
@@ -426,7 +445,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
                     <FormLabel>Category *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value}
+                      value={field.value || ""}
                       disabled
                     >
                       <FormControl>

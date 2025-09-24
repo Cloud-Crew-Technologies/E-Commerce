@@ -36,7 +36,6 @@ export function AuthProvider({ children }) {
       setIsLoading(false);
     }
   };
-const names = sessionStorage.getItem("name");
   const loginMutation = useMutation({
     mutationFn: async (loginData) => {
       const response = await apiRequest("POST", "/api/users/login", loginData);
@@ -85,12 +84,28 @@ const names = sessionStorage.getItem("name");
 
   const registerMutation = useMutation({
     mutationFn: async (userData) => {
-      const response = await apiRequest(
+      // First create the user
+      const userResponse = await apiRequest(
         "POST",
-        "/api/users/register",
-        userData
+        "/api/users/create",
+        {
+          username: userData.username,
+          password: userData.password,
+          storeName: userData.storeName,
+          role: "admin",
+        }
       );
-      const newUser = await response.json();
+      const newUser = await userResponse.json();
+
+      // Then create the store settings
+      await apiRequest("POST", "/api/store-settings/create", {
+        storeName: userData.storeName,
+        description: "",
+        address: userData.storeaddress,
+        contactEmail: userData.email,
+        contactPhone: userData.mobileNumber,
+      });
+
       return newUser;
     },
     onSuccess: (userData) => {

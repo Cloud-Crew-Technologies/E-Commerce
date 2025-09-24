@@ -122,9 +122,9 @@ export default function Coupons() {
   };
 
   return (
-    <div className="flex min-h-screen bg-grey-50">
-      <Sidebar />
-      <div className="flex-1 ml-0 lg:ml-64 transition-all duration-300">
+    <div className=" bg-grey-50">
+        <Sidebar />
+      <div className="flex-1 ml-0 lg:ml-14 transition-all duration-300">
         <Header title="Coupons" subtitle="Manage discount coupons" />
 
         <main className="p-4 sm:p-6 w-full max-w-screen-2xl mx-auto">

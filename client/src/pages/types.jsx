@@ -137,9 +137,9 @@ export default function Types() {
   );
 
   return (
-    <div className="flex min-h-screen bg-grey-50">
-      <Sidebar />
-      <div className="ml-64 flex-1">
+    <div className=" bg-grey-50">
+        <Sidebar />
+      <div className="ml-14 flex-1 h-4">
         <Header
           title="Types"
           subtitle="Create and manage product types"

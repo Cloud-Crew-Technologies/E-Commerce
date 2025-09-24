@@ -136,9 +136,9 @@ export default function Categories() {
   );
 
   return (
-    <div className="flex min-h-screen bg-grey-50">
-      <Sidebar />
-      <div className="ml-64 flex-1">
+    <div className=" bg-grey-50">
+        <Sidebar />
+      <div className="ml-14 flex-1">
         <Header
           title="Categories"
           subtitle="Create and manage product categories"

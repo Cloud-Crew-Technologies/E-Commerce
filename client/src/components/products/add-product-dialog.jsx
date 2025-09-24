@@ -188,7 +188,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
       // Send FormData to backend
       const response = await axios.post(
-        "http://localhost:3001/api/products/create",
+        "https://ecommerceapi.skillhiveinnovations.com/api/products/create",
         formData,
         {
           headers: {

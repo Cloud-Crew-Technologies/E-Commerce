@@ -60,8 +60,12 @@ export default function EditProductDialog({
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [productData, setProductData] = useState(null);
 
+  // Separate effect for fetching categories and types
   useEffect(() => {
+    if (!open) return; // Only fetch when dialog is open
+
     const fetchCategories = async () => {
       try {
         setIsLoadingCategories(true);
@@ -96,7 +100,9 @@ export default function EditProductDialog({
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get(
+          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+        );
 
         if (
           response.data &&
@@ -122,30 +128,24 @@ export default function EditProductDialog({
       }
     };
 
-    const fetchProduct = async () => {
-      if (!productId) return;
+    fetchCategories();
+    fetchTypes();
+  }, [open, toast]);
 
+  // Separate effect for fetching product data
+  useEffect(() => {
+    if (!open || !productId) return;
+
+    const fetchProduct = async () => {
       try {
         setIsLoadingProducts(true);
         const url = `https://ecommerceapi.skillhiveinnovations.com/api/batch/${batch}/products/${productId}`;
         const response = await axios.get(url);
 
         if (response.data && response.data.data) {
-          const productData = response.data.data;
-          console.log(productData);
-          // Update form with product data
-          form.reset({
-            name: productData.name || "",
-            description: productData.description || "",
-            rprice: (productData.rprice || 0).toString(),
-            wprice: (productData.wprice || 0).toString(),
-            weight: (productData.weight || 0).toString(),
-            quantity: productData.quantity || 0,
-            category: productData.category,
-            type: productData.type,
-            isActive: productData.isActive ?? true,
-            batchID: productData.batchID || "",
-          });
+          const fetchedProductData = response.data.data;
+          console.log(fetchedProductData);
+          setProductData(fetchedProductData);
         }
       } catch (error) {
         console.error("Failed to fetch product:", error);
@@ -160,10 +160,55 @@ export default function EditProductDialog({
       }
     };
 
-    fetchCategories();
     fetchProduct();
-    fetchTypes();
-  }, [productId, batch, toast, form]);
+  }, [open, productId, batch, toast]);
+
+  // Effect to populate form when both product data and categories/types are loaded
+  useEffect(() => {
+    if (
+      productData &&
+      !isLoadingCategories &&
+      !isLoadingTypes &&
+      categories.length > 0 &&
+      types.length > 0
+    ) {
+      // Reset form with product data after categories and types are loaded
+      form.reset({
+        name: productData.name || "",
+        description: productData.description || "",
+        rprice: (productData.rprice || 0).toString(),
+        wprice: (productData.wprice || 0).toString(),
+        weight: (productData.weight || 0).toString(),
+        quantity: productData.quantity || 0,
+        category: productData.category,
+        type: productData.type,
+        isActive: productData.isActive ?? true,
+        batchID: productData.batchID || "",
+      });
+    }
+  }, [
+    productData,
+    isLoadingCategories,
+    isLoadingTypes,
+    categories,
+    types,
+    form,
+  ]);
+
+  // Reset form and state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setProductData(null);
+      setSelectedFile(null);
+      setCategories([]);
+      setTypes([]);
+      setIsLoadingCategories(true);
+      setIsLoadingTypes(true);
+      setIsLoadingProducts(true);
+    }
+  }, [open, form]);
+
   console.log(products);
 
   const updateProductMutation = useMutation({
@@ -219,7 +264,10 @@ export default function EditProductDialog({
 
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
-    axios.put(`https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`, data);
+    axios.put(
+      `https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`,
+      data
+    );
   };
 
   const handleCancel = () => {
@@ -360,7 +408,7 @@ export default function EditProductDialog({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select type" disabled />
+                          <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -427,7 +475,7 @@ export default function EditProductDialog({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" disabled />
+                          <SelectValue placeholder="Select category" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

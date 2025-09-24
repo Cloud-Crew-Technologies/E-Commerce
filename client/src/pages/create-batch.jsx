@@ -160,10 +160,7 @@ export default function CreateBatch() {
         })),
       };
 
-      await axios.post(
-        "http://localhost:3001/api/batch/create",
-        payload
-      );
+      await axios.post("https://ecommerceapi.skillhiveinnovations.com/api/batch/create", payload);
       toast({ title: "Stock added successfully" });
       setOpenConfirm(false);
       setStep(1);
@@ -182,10 +179,10 @@ export default function CreateBatch() {
   };
 
   return (
-    <div className="min-h-screen bg-grey-50">
+    <div className=" bg-grey-50">
       <Sidebar />
-      <div className="ml-64">
-        <Header />
+      <div className="ml-14">
+        <Header>Create Batch</Header>
 
         <div className="p-6 space-y-6">
           <Card>

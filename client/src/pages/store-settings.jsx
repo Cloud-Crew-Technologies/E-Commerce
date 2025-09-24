@@ -56,7 +56,7 @@ export default function StoreSettings() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        `http://localhost:3001/api/store-settings/get/${storename}` 
+        `https://ecommerceapi.skillhiveinnovations.com/api/store-settings/get/${storename}` 
       );
 
       if (response.data.success && response.data.data) {
@@ -117,9 +117,9 @@ export default function StoreSettings() {
   };
 
   return (
-    <div className="flex min-l-screen bg-grey-50">
-      <Sidebar />
-      <div className="ml-64 flex-1 ">
+    <div className=" bg-grey-50">
+        <Sidebar />
+      <div className="ml-14 flex-1 ">
         <Header
           title="Store Settings"
           subtitle="Configure your store information and preferences"

@@ -60,8 +60,12 @@ export default function EditBatchDialog({
   const [products, setProducts] = useState([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [selectedFile, setSelectedFile] = useState("");
+  const [productData, setProductData] = useState(null);
 
+  // Separate effect for fetching categories and types
   useEffect(() => {
+    if (!open) return; // Only fetch when dialog is open
+
     const fetchCategories = async () => {
       try {
         setIsLoadingCategories(true);
@@ -96,7 +100,9 @@ export default function EditBatchDialog({
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get(
+          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+        );
 
         if (
           response.data &&
@@ -122,37 +128,32 @@ export default function EditBatchDialog({
       }
     };
 
-    const fetchProduct = async () => {
-      if (!productId) return;
+    fetchCategories();
+    fetchTypes();
+  }, [open, toast]);
 
+  // Separate effect for fetching product data
+  useEffect(() => {
+    if (!open || !productId) return;
+
+    const fetchProduct = async () => {
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
           `https://ecommerceapi.skillhiveinnovations.com/api/batch/${batch}/products/${productId}`
         );
 
-        const productData =
+        const fetchedProductData =
           response?.data?.data || response?.data?.product || response?.data;
+
         if (
-          productData &&
-          typeof productData === "object" &&
-          !Array.isArray(productData)
+          fetchedProductData &&
+          typeof fetchedProductData === "object" &&
+          !Array.isArray(fetchedProductData)
         ) {
-          console.log(productData);
-          // Update form with product data
-          form.reset({
-            name: productData.name || "",
-            description: productData.description || "",
-            rprice: (productData.rprice || 0).toString(),
-            wprice: (productData.wprice || 0).toString(),
-            weight: (productData.weight || 0).toString(),
-            quantity: productData.quantity || 0,
-            category: productData.category,
-            type: productData.type,
-            isActive: productData.isActive ?? true,
-            batchID: productData.batchID || "",
-          });
-          setSelectedFile(productData.name || "");
+          console.log(fetchedProductData);
+          setProductData(fetchedProductData);
+          setSelectedFile(fetchedProductData.name || "");
         }
       } catch (error) {
         console.error("Failed to fetch product:", error);
@@ -167,10 +168,55 @@ export default function EditBatchDialog({
       }
     };
 
-    fetchCategories();
     fetchProduct();
-    fetchTypes();
-  }, [productId, toast, form]);
+  }, [open, productId, batch, toast]);
+
+  // Effect to populate form when both product data and categories/types are loaded
+  useEffect(() => {
+    if (
+      productData &&
+      !isLoadingCategories &&
+      !isLoadingTypes &&
+      categories.length > 0 &&
+      types.length > 0
+    ) {
+      // Reset form with product data after categories and types are loaded
+      form.reset({
+        name: productData.name || "",
+        description: productData.description || "",
+        rprice: (productData.rprice || 0).toString(),
+        wprice: (productData.wprice || 0).toString(),
+        weight: (productData.weight || 0).toString(),
+        quantity: productData.quantity || 0,
+        category: productData.category,
+        type: productData.type,
+        isActive: productData.isActive ?? true,
+        batchID: productData.batchID || "",
+      });
+    }
+  }, [
+    productData,
+    isLoadingCategories,
+    isLoadingTypes,
+    categories,
+    types,
+    form,
+  ]);
+
+  // Reset form and state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      form.reset();
+      setProductData(null);
+      setSelectedFile("");
+      setCategories([]);
+      setTypes([]);
+      setIsLoadingCategories(true);
+      setIsLoadingTypes(true);
+      setIsLoadingProducts(true);
+    }
+  }, [open, form]);
+
   console.log(products);
 
   const updateProductMutation = useMutation({

@@ -66,7 +66,9 @@ export default function StockManagement() {
   const fetchTypes = async () => {
     try {
       setIsLoadingTypes(true);
-      const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/types/get");
+      const response = await axios.get(
+        "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+      );
 
       if (
         response.data &&
@@ -94,7 +96,9 @@ export default function StockManagement() {
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/batch/get");
+      const response = await axios.get(
+        "https://ecommerceapi.skillhiveinnovations.com/api/batch/get"
+      );
 
       const payload = response.data;
       console.log("Fetched Batches:", payload);
@@ -345,7 +349,6 @@ export default function StockManagement() {
       quantity: product.quantity + " units",
       rprice: `${product.rprice}`,
       wprice: `${product.wprice}`,
-      status: getStockStatus(product.quantity),
     }));
 
     autoTable(doc, {
@@ -368,6 +371,7 @@ export default function StockManagement() {
     doc.text("Inventory Overview", 14, 15);
     doc.save("inventory-overview.pdf");
   };
+  console.log(filteredProducts);
 
   // Excel Export function using SheetJS and file-saver
   const exportExcel = () => {
@@ -391,7 +395,6 @@ export default function StockManagement() {
       "Current Stock": product.quantity,
       "Retail Price": product.rprice,
       "Whole Price": product.wprice,
-      Status: getStockStatus(product.quantity),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(wsData);
@@ -403,9 +406,9 @@ export default function StockManagement() {
   };
 
   return (
-    <div className="flex min-h-screen bg-grey-50">
+    <div className=" bg-grey-50">
       <Sidebar />
-      <div className="ml-64 flex-1">
+      <div className="ml-14 flex-1">
         <Header
           title="Stock Management"
           subtitle="Monitor and manage inventory levels"
@@ -413,7 +416,7 @@ export default function StockManagement() {
 
         <main className="p-6">
           {/* Stock Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <Card className="material-elevation-2">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -439,57 +442,24 @@ export default function StockManagement() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-grey-600">
-                      In Stock
+                      Total retail Value
                     </p>
                     <p className="text-2xl font-bold text-green-600">
                       {isLoading
                         ? "..."
-                        : filteredProducts?.filter((p) => p.quantity > 10)
-                            .length || 0}
+                        : `₹${(
+                            filteredProducts?.reduce(
+                              (total, product) =>
+                                total + product.quantity * product.rprice,
+                              0
+                            ) || 0
+                          ).toLocaleString()}`}
                     </p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-full">
                     <span className="material-icons text-green-600">
                       check_circle
                     </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="material-elevation-2">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-grey-600">
-                      Low Stock
-                    </p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      {isLoading ? "..." : lowStockProducts.length || 0}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-orange-100 rounded-full">
-                    <span className="material-icons text-orange-600">
-                      warning
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="material-elevation-2">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-grey-600">
-                      Out of Stock
-                    </p>
-                    <p className="text-2xl font-bold text-red-600">
-                      {isLoading ? "..." : outOfStockProducts.length || 0}
-                    </p>
-                  </div>
-                  <div className="p-3 bg-red-100 rounded-full">
-                    <span className="material-icons text-red-600">cancel</span>
                   </div>
                 </div>
               </CardContent>

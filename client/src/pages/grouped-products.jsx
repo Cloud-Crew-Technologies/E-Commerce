@@ -41,7 +41,9 @@ export default function GroupedProducts() {
     const fetchProducts = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/batch/get");
+        const response = await axios.get(
+          "https://ecommerceapi.skillhiveinnovations.com/api/batch/get"
+        );
         const data = Array.isArray(response.data)
           ? response.data
           : response.data?.data || [];
@@ -61,7 +63,9 @@ export default function GroupedProducts() {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://ecommerceapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get(
+          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+        );
         if (
           response.data &&
           response.data.success &&
@@ -183,6 +187,22 @@ export default function GroupedProducts() {
       }
       entry.totalStock += Number(p.quantity ?? 0);
     }
+    const getStockStatus = (quantity) => {
+      if (quantity === 0) return "Out of Stock";
+      if (quantity <= 10) return "Low Stock";
+      return "In Stock";
+    };
+
+    const getStockColor = (quantity) => {
+      if (quantity === 0) return "status-chip status-inactive";
+      if (quantity <= 10) return "status-chip status-low-stock";
+      return "status-chip status-active";
+    };
+
+    const lowStockProducts =
+      filteredProducts?.filter((product) => product.quantity <= 10) || [];
+    const outOfStockProducts =
+      filteredProducts?.filter((product) => product.quantity === 0) || [];
 
     return Array.from(map.values()).map((entry) => ({
       ...entry,
@@ -191,9 +211,9 @@ export default function GroupedProducts() {
   }, [filtered]);
 
   return (
-    <div className="flex min-h-screen bg-grey-50">
+    <div className=" bg-grey-50">
       <Sidebar />
-      <div className="ml-64 flex-1">
+      <div className="ml-14 flex-1">
         <Header
           title="Grouped Products"
           subtitle="Grouped by name, category, and type"
