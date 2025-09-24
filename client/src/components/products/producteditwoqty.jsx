@@ -302,7 +302,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
       // Send FormData to backend
       const response = await axios.put(
-        `https://skillhiveinnovations.com/api/products/updatewithimage/${productId}`,
+        `https://ecommerceapi.skillhiveinnovations.com/api/products/updatewithimage/${productId}`,
         formData,
         {
           headers: {
