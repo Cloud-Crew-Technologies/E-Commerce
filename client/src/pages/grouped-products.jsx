@@ -136,6 +136,7 @@ export default function GroupedProducts() {
       .map((t) => (typeof t === "string" ? t : t.name))
       .filter(Boolean);
   }, [fetchedTypes]);
+  console.log("done");
 
   // Filter batches' products based on search, category, and type filters
   const filtered = useMemo(() => {
