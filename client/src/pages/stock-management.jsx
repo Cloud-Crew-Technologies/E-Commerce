@@ -346,7 +346,7 @@ export default function StockManagement() {
       description: product.description,
       category: product.category,
       type: product.type,
-      quantity: product.quantity + " units",
+      quantity: product.quantity + " Units",
       rprice: `${product.rprice}`,
       wprice: `${product.wprice}`,
     }));
@@ -697,7 +697,7 @@ export default function StockManagement() {
                           <Badge variant="outline">{product.type}</Badge>
                         </TableCell>
                         <TableCell className="font-medium">
-                          {product.quantity} units
+                          {product.quantity} Units
                         </TableCell>
                         <TableCell className="font-mono text-sm">
                           {"₹"}
