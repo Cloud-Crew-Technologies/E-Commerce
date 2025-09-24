@@ -195,6 +195,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       // Set existing image if available
       if (productData.imageUrl) {
         setImagePreview(productData.imageUrl);
+        setSelectedFile(null); // Clear selected file when showing existing image
       }
     }
   }, [
@@ -244,31 +245,64 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
   const updateProductMutation = useMutation({
     mutationFn: async (data) => {
-      // Create FormData to send file along with other data
-      const formData = new FormData();
-      // Append all form fields
-      formData.append("name", data.name);
-      formData.append("productID", data.productID);
-      formData.append("description", data.description);
-      formData.append("category", data.category);
-      formData.append("type", data.type);
-      formData.append("weight", data.weight);
-      formData.append("isActive", data.isActive);
-      formData.append("benefits", data.benefits);
-      formData.append("wprice", data.wprice);
-      formData.append("rprice", data.rprice);
-      formData.append("expiryDate", data.expiryDate);
-      formData.append("tax", data.tax);
-      formData.append("taxValue", (data.tax / 100) * data.rprice);
+      console.log("=== IMAGE UPDATE DEBUG ===");
+      console.log("selectedFile:", selectedFile);
+      console.log("selectedFile exists:", !!selectedFile);
+      if (selectedFile) {
+        console.log("selectedFile details:", {
+          name: selectedFile.name,
+          size: selectedFile.size,
+          type: selectedFile.type,
+        });
+      }
 
-      // Append image file if selected
+      // ALWAYS use FormData when updating products (even without image)
+      const formData = new FormData();
+
+      // Append all form fields
+      formData.append("name", data.name || "");
+      formData.append("productID", data.productID || "");
+      formData.append("description", data.description || "");
+      formData.append("category", data.category || "");
+      formData.append("type", data.type || "");
+      formData.append("weight", data.weight ? data.weight.toString() : "0");
+      formData.append("isActive", data.isActive ? "true" : "false");
+      formData.append("benefits", data.benefits || "");
+      formData.append("wprice", data.wprice ? data.wprice.toString() : "0");
+      formData.append("rprice", data.rprice ? data.rprice.toString() : "0");
+      formData.append("expiryDate", data.expiryDate || "");
+      formData.append("tax", data.tax ? data.tax.toString() : "0");
+
+      // Calculate taxValue properly
+      const rpriceNum = parseFloat(data.rprice) || 0;
+      const taxNum = parseFloat(data.tax) || 0;
+      const taxValue = (taxNum / 100) * rpriceNum;
+      formData.append("taxValue", taxValue.toString());
+
+      // Critical: Always append image field (even if null) to trigger image update logic
       if (selectedFile) {
         formData.append("image", selectedFile);
+        console.log("✅ Appending NEW image file:", selectedFile.name);
+      } else {
+        console.log("⚠️ No new image selected - keeping existing image");
+        // Don't append anything for image field if no new image is selected
+      }
+
+      // Debug: Log all FormData contents
+      console.log("FormData contents being sent:");
+      for (let pair of formData.entries()) {
+        if (pair[1] instanceof File) {
+          console.log(
+            `${pair[0]}: FILE - ${pair[1].name} (${pair[1].size} bytes)`
+          );
+        } else {
+          console.log(`${pair[0]}: ${pair[1]}`);
+        }
       }
 
       // Send FormData to backend
       const response = await axios.put(
-        `https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`,
+        `https://skillhiveinnovations.com/api/products/updatewithimage/${productId}`,
         formData,
         {
           headers: {
@@ -277,17 +311,26 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
         }
       );
 
+      console.log("✅ Backend response:", response.data);
+      console.log("=== END IMAGE UPDATE DEBUG ===");
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Product updated",
         description: "Product has been successfully updated.",
       });
+
+      // Reset the file selection state
+      setSelectedFile(null);
+
+      // Update image preview with new image URL if returned
+      if (data.data && data.data.imageUrl) {
+        setImagePreview(data.data.imageUrl);
+      }
+
       onOpenChange(false);
-      // Trigger a page refresh to get the updated data
-      window.location.reload();
     },
     onError: (error) => {
       console.error("Edit product error:", error);
@@ -303,17 +346,20 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
   });
 
   const onSubmit = (data) => {
+    console.log("Form submission data:", data);
+    console.log("Selected file:", selectedFile);
     updateProductMutation.mutate(data);
-    axios.put(
-      `https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`,
-      data
-    );
   };
 
   const handleCancel = () => {
     form.reset();
     setSelectedFile(null);
-    setImagePreview(null);
+    // Reset image preview to original product image
+    if (products && products.imageUrl) {
+      setImagePreview(products.imageUrl);
+    } else {
+      setImagePreview(null);
+    }
     onOpenChange(false);
   };
 
@@ -461,9 +507,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         min="0"
                         placeholder="0"
                         {...field}
-                        onChange={(e) =>
-                          field.onChange(parseInt(e.target.value))
-                        }
+                        onChange={(e) => field.onChange(e.target.value)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -482,9 +526,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         type="number"
                         placeholder="0"
                         {...field}
-                        onChange={(e) =>
-                          field.onChange(parseInt(e.target.value))
-                        }
+                        onChange={(e) => field.onChange(e.target.value)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -538,7 +580,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                   </FormItem>
                 )}
               />
-
 
               <FormField
                 control={form.control}
@@ -615,7 +656,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         <SelectItem value="12">12%</SelectItem>
                         <SelectItem value="18">18%</SelectItem>
                         <SelectItem value="28">28%</SelectItem>
-                        <SelectItem value="4">40%</SelectItem>
+                        <SelectItem value="40">40%</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -643,21 +684,16 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                       className="max-h-40 w-full object-cover rounded"
                     />
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">
-                        {selectedFile
-                          ? `Selected: ${selectedFile?.name}`
-                          : "Current image"}
-                      </span>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => {
                           setSelectedFile(null);
-                          setImagePreview(null);
+                          setImagePreview(products?.image || null);
                         }}
                       >
-                        Remove
+                        {selectedFile ? "Cancel Selection" : "Remove Image"}
                       </Button>
                     </div>
                   </div>

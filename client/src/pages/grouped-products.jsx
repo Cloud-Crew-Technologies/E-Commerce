@@ -160,6 +160,19 @@ export default function GroupedProducts() {
     });
   }, [products, search, categoryFilter, typeFilter]);
 
+  // Helper functions for stock status
+  const getStockStatus = (quantity) => {
+    if (quantity === 0) return "Out of Stock";
+    if (quantity <= 10) return "Low Stock";
+    return "In Stock";
+  };
+
+  const getStockVariant = (quantity) => {
+    if (quantity === 0) return "destructive";
+    if (quantity <= 10) return "secondary";
+    return "default";
+  };
+
   // Group filtered products by name | category | type with batch count and total stock
   const grouped = useMemo(() => {
     const map = new Map();
@@ -187,22 +200,6 @@ export default function GroupedProducts() {
       }
       entry.totalStock += Number(p.quantity ?? 0);
     }
-    const getStockStatus = (quantity) => {
-      if (quantity === 0) return "Out of Stock";
-      if (quantity <= 10) return "Low Stock";
-      return "In Stock";
-    };
-
-    const getStockColor = (quantity) => {
-      if (quantity === 0) return "status-chip status-inactive";
-      if (quantity <= 10) return "status-chip status-low-stock";
-      return "status-chip status-active";
-    };
-
-    const lowStockProducts =
-      filteredProducts?.filter((product) => product.quantity <= 10) || [];
-    const outOfStockProducts =
-      filteredProducts?.filter((product) => product.quantity === 0) || [];
 
     return Array.from(map.values()).map((entry) => ({
       ...entry,
@@ -292,13 +289,14 @@ export default function GroupedProducts() {
                       <TableHead>Type</TableHead>
                       <TableHead>Batch Counts</TableHead>
                       <TableHead>Total Stock</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {grouped.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={5}
+                          colSpan={6}
                           className="text-center text-grey-500 py-8"
                         >
                           No results
@@ -319,7 +317,16 @@ export default function GroupedProducts() {
                             <Badge>{g.type || "-"}</Badge>
                           </TableCell>
                           <TableCell>{g.batchCount}</TableCell>
-                          <TableCell>{g.totalStock}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {g.totalStock}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStockVariant(g.totalStock)}>
+                              {getStockStatus(g.totalStock)}
+                            </Badge>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
