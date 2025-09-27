@@ -49,6 +49,10 @@ export default function AddProductDialog({ open, onOpenChange }) {
       benefits: "",
       tax: 0,
       taxValue: 0,
+      MRP: 0,
+      lowstock: 0,
+      wsalesprice: 0,
+      rsalesprice: 0,
     },
   });
 
@@ -64,7 +68,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/categories/get"
+          "http://localhost:3001/api/categories/get"
         );
 
         if (
@@ -93,9 +97,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
-        );
+        const response = await axios.get("http://localhost:3001/api/types/get");
 
         if (
           response.data &&
@@ -161,6 +163,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
   const addProductMutation = useMutation({
     mutationFn: async (data) => {
+      const salesvalue = data.tax / 100;
       // Create FormData to send file along with other data
       const formData = new FormData(); // Generate a random ID for ProductId
       // Append all form fields
@@ -180,6 +183,10 @@ export default function AddProductDialog({ open, onOpenChange }) {
       formData.append("benefits", data.benefits);
       formData.append("tax", data.tax);
       formData.append("taxValue", (data.tax / 100) * data.rprice);
+      formData.append("MRP", data.MRP);
+      formData.append("lowstock", data.lowstock);
+      formData.append("wsalesprice", data.wprice / (1 + salesvalue));
+      formData.append("rsalesprice", data.rprice / (1 + salesvalue));
 
       // Append image file if selected
       if (selectedFile) {
@@ -188,7 +195,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
       // Send FormData to backend
       const response = await axios.post(
-        "https://ecommerceapi.skillhiveinnovations.com/api/products/create",
+        "http://localhost:3001/api/products/create",
         formData,
         {
           headers: {
@@ -370,6 +377,50 @@ export default function AddProductDialog({ open, onOpenChange }) {
             <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
+                name="lowstock"
+                rules={{ required: "low stock is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Low Stock *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="MRP"
+                rules={{ required: "MRP is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>MRP *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="rprice"
                 rules={{ required: "Retail price is required" }}
                 render={({ field }) => (
@@ -499,7 +550,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select tax rate" />
+                          <SelectValue placeholder="Select Tax rate" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

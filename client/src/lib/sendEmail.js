@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const sendEmail = async ({ subject, text, html, to }) => {
   try {
-    const response = await axios.post("https://ecommerceapi.skillhiveinnovations.com/mail/send-email", {
+    const response = await axios.post("http://localhost:3001/mail/send-email", {
       subject,
       text,
       html,

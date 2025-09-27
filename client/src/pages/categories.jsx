@@ -36,7 +36,7 @@ export default function Categories() {
     try {
       setIsLoadingCategories(true);
       const response = await axios.get(
-        "https://ecommerceapi.skillhiveinnovations.com/api/categories/get"
+        "http://localhost:3001/api/categories/get"
       );
 
       // Ensure we set an array - handle different response structures
@@ -65,7 +65,7 @@ export default function Categories() {
   const createCategoryMutation = useMutation({
     mutationFn: async (categoryData) => {
       const response = await axios.post(
-        "https://ecommerceapi.skillhiveinnovations.com/api/categories/create",
+        "http://localhost:3001/api/categories/create",
         categoryData
       );
       return response.data;
@@ -93,7 +93,7 @@ export default function Categories() {
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id) => {
       const response = await axios.delete(
-        `https://ecommerceapi.skillhiveinnovations.com/api/categories/delete/${id}`
+        `http://localhost:3001/api/categories/delete/${id}`
       );
       return response.data;
     },

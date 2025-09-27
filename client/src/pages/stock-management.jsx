@@ -67,7 +67,7 @@ export default function StockManagement() {
     try {
       setIsLoadingTypes(true);
       const response = await axios.get(
-        "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+        "http://localhost:3001/api/types/get"
       );
 
       if (
@@ -97,7 +97,7 @@ export default function StockManagement() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://ecommerceapi.skillhiveinnovations.com/api/batch/get"
+        "http://localhost:3001/api/batch/get"
       );
 
       const payload = response.data;
@@ -134,7 +134,7 @@ export default function StockManagement() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://ecommerceapi.skillhiveinnovations.com/api/categories/get"
+        "http://localhost:3001/api/categories/get"
       );
       const categoryData = response.data;
       console.log(categoriesData);
@@ -188,16 +188,17 @@ export default function StockManagement() {
     const matchesPrice =
       product.rprice >= filters.priceRange[0] &&
       product.rprice <= filters.priceRange[1];
-
+//logic change
     // Stock level filtering
     const stockLevel = product.quantity || 0;
+    const lowStockThreshold = product.lowstock || 10;
     const matchesStockLevel =
       filters.stockLevel === "all" ||
       (filters.stockLevel === "no-stock" && stockLevel < 1) ||
       (filters.stockLevel === "low-stock" &&
         stockLevel >= 1 &&
-        stockLevel <= 10) ||
-      (filters.stockLevel === "full-stock" && stockLevel > 10);
+        stockLevel <= lowStockThreshold) ||
+      (filters.stockLevel === "full-stock" && stockLevel > lowStockThreshold);
 
     // Batch filter
     const matchesBatch =
@@ -279,21 +280,31 @@ export default function StockManagement() {
       });
     },
   });
-
-  const getStockStatus = (quantity) => {
+  //logic change
+  const getStockStatus = (product) => {
+    const quantity = product.quantity || 0;
+    const lowStockThreshold = product.lowstock || 10;
+    
     if (quantity === 0) return "Out of Stock";
-    if (quantity <= 10) return "Low Stock";
+    if (quantity <= lowStockThreshold) return "Low Stock";
     return "In Stock";
   };
 
-  const getStockColor = (quantity) => {
+  const getStockColor = (product) => {
+    const quantity = product.quantity || 0;
+    const lowStockThreshold = product.lowstock || 10;
+    
     if (quantity === 0) return "status-chip status-inactive";
-    if (quantity <= 10) return "status-chip status-low-stock";
+    if (quantity <= lowStockThreshold) return "status-chip status-low-stock";
     return "status-chip status-active";
   };
 
   const lowStockProducts =
-    filteredProducts?.filter((product) => product.quantity <= 10) || [];
+    filteredProducts?.filter((product) => {
+      const quantity = product.quantity || 0;
+      const lowStockThreshold = product.lowstock || 10;
+      return quantity > 0 && quantity <= lowStockThreshold;
+    }) || [];
   const outOfStockProducts =
     filteredProducts?.filter((product) => product.quantity === 0) || [];
 
@@ -574,9 +585,9 @@ export default function StockManagement() {
                     <SelectContent>
                       <SelectItem value="all">All Stock Levels</SelectItem>
                       <SelectItem value="no-stock">Out of Stock</SelectItem>
-                      <SelectItem value="low-stock">Low Stock (≤10)</SelectItem>
+                      <SelectItem value="low-stock">Low Stock</SelectItem>
                       <SelectItem value="full-stock">
-                        Full Stock (&gt;10)
+                        Full Stock
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -711,8 +722,8 @@ export default function StockManagement() {
                           {product.expiryDate}
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStockColor(product.quantity)}>
-                            {getStockStatus(product.quantity)}
+                          <Badge className={getStockColor(product)}>
+                            {getStockStatus(product)}
                           </Badge>
                         </TableCell>
                         <TableCell>

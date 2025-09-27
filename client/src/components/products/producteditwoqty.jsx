@@ -48,6 +48,8 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       expiryDate: "",
       tax: 0,
       taxValue: 0,
+      MRP: 0,
+      lowstock: 0,
     },
   });
 
@@ -65,7 +67,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/categories/get"
+          "http://localhost:3001/api/categories/get"
         );
 
         if (
@@ -96,7 +98,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       try {
         setIsLoadingTypes(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+          "http://localhost:3001/api/types/get"
         );
 
         if (
@@ -129,7 +131,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
-          `https://ecommerceapi.skillhiveinnovations.com/api/products/get/${productId}`
+          `http://localhost:3001/api/products/get/${productId}`
         );
 
         if (response.data && response.data.data) {
@@ -189,6 +191,8 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
           expiryDate: productData.expiryDate || "",
           tax: productData.tax ? productData.tax.toString() : "0",
           taxValue: productData.taxValue || 0,
+          MRP: productData.MRP || 0,
+          lowstock: productData.lowstock || 0,
         });
       }, 100);
 
@@ -302,7 +306,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
       // Send FormData to backend
       const response = await axios.put(
-        `https://ecommerceapi.skillhiveinnovations.com/api/products/updatewithimage/${productId}`,
+        `http://localhost:3001/api/products/updatewithimage/${productId}`,
         formData,
         {
           headers: {
@@ -494,6 +498,50 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
             />
 
             <div className="grid grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="lowstock"
+                rules={{ required: "low stock is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Low Stock *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="MRP"
+                rules={{ required: "MRP is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>MRP *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="rprice"

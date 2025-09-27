@@ -75,7 +75,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/orders/get"
+          "http://localhost:3001/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -215,7 +215,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/orders/get"
+          "http://localhost:3001/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data

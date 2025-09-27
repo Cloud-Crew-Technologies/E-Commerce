@@ -36,7 +36,7 @@ export default function ProductCard({ product, onEdit, onDelete }) {
     try {
       // Check batch quantities
       const batchResponse = await fetch(
-        "https://ecommerceapi.skillhiveinnovations.com/api/batch/get"
+        "http://localhost:3001/api/batch/get"
       );
       const batchData = await batchResponse.json();
 
@@ -62,7 +62,7 @@ export default function ProductCard({ product, onEdit, onDelete }) {
 
       // Check active orders
       const ordersResponse = await fetch(
-        "https://ecommerceapi.skillhiveinnovations.com/api/orders/get"
+        "http://localhost:3001/api/orders/get"
       );
       const ordersData = await ordersResponse.json();
 

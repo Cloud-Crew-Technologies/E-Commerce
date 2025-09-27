@@ -39,7 +39,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       setIsLoading(true);
       try {
         const response = await axios.get(
-          `https://ecommerceapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+          `http://localhost:3001/api/orders/orderbyID/${orderID}`
         );
         if (response.data && response.data.data) {
           setOrderDetails(response.data.data);
@@ -80,7 +80,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
         try {
           // Replace with your actual product API endpoint
           const productResponse = await axios.get(
-            `https://ecommerceapi.skillhiveinnovations.com/api/products/product/${productId}`
+            `http://localhost:3001/api/products/product/${productId}`
           );
 
           if (

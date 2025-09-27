@@ -50,6 +50,8 @@ export default function EditProductDialog({
       rprice: "",
       wprice: "",
       batchID: "",
+      MRP: 0,
+      lowstock: 0,
     },
   });
 
@@ -70,7 +72,7 @@ export default function EditProductDialog({
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/categories/get"
+          "http://localhost:3001/api/categories/get"
         );
 
         if (
@@ -101,7 +103,7 @@ export default function EditProductDialog({
       try {
         setIsLoadingTypes(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+          "http://localhost:3001/api/types/get"
         );
 
         if (
@@ -139,7 +141,7 @@ export default function EditProductDialog({
     const fetchProduct = async () => {
       try {
         setIsLoadingProducts(true);
-        const url = `https://ecommerceapi.skillhiveinnovations.com/api/batch/${batch}/products/${productId}`;
+        const url = `http://localhost:3001/api/batch/${batch}/products/${productId}`;
         const response = await axios.get(url);
 
         if (response.data && response.data.data) {
@@ -184,6 +186,8 @@ export default function EditProductDialog({
         type: productData.type,
         isActive: productData.isActive ?? true,
         batchID: productData.batchID || "",
+        MRP: productData.MRP || 0,
+        lowstock: productData.lowstock || 0,
       });
     }
   }, [
@@ -225,10 +229,12 @@ export default function EditProductDialog({
       formData.append("batchID", data.batchID);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
+      formData.append("MRP", data.MRP);
+      formData.append("lowstock", data.lowstock);
 
       // Send FormData to backend
       const response = await axios.put(
-        `https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`,
+        `http://localhost:3001/api/products/update/${productId}`,
         formData,
         {
           headers: {
@@ -265,7 +271,7 @@ export default function EditProductDialog({
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
     axios.put(
-      `https://ecommerceapi.skillhiveinnovations.com/api/products/update/${productId}`,
+      `http://localhost:3001/api/products/update/${productId}`,
       data
     );
   };
@@ -349,6 +355,50 @@ export default function EditProductDialog({
             />
 
             <div className="grid grid-cols-3 gap-4">
+               <FormField
+                control={form.control}
+                name="lowstock"
+                rules={{ required: "low stock is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Low Stock *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="MRP"
+                rules={{ required: "MRP is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>MRP *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value))
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="rprice"

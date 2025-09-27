@@ -35,7 +35,7 @@ export default function LoginPage() {
         try {
           // First, get user data
           const userResponse = await axios.get(
-            `https://ecommerceapi.skillhiveinnovations.com/api/users/${loginData.username}`
+            `http://localhost:3001/api/users/${loginData.username}`
           );
           const userData = userResponse.data.data;
           console.log("User data details:", userData);
@@ -52,7 +52,7 @@ export default function LoginPage() {
           if (storename) {
             try {
               const storeResponse = await axios.get(
-                `https://ecommerceapi.skillhiveinnovations.com/api/store-settings/get/${storename}`
+                `http://localhost:3001/api/store-settings/get/${storename}`
               );
               const storeData = storeResponse.data.data;
 

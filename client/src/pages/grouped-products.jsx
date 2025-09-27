@@ -42,7 +42,7 @@ export default function GroupedProducts() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/batch/get"
+          "http://localhost:3001/api/batch/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -64,7 +64,7 @@ export default function GroupedProducts() {
       try {
         setIsLoadingTypes(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/types/get"
+          "http://localhost:3001/api/types/get"
         );
         if (
           response.data &&
@@ -94,7 +94,7 @@ export default function GroupedProducts() {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://ecommerceapi.skillhiveinnovations.com/api/categories/get"
+          "http://localhost:3001/api/categories/get"
         );
         const categoryData = response.data;
         if (Array.isArray(categoryData)) {
@@ -161,16 +161,23 @@ export default function GroupedProducts() {
     });
   }, [products, search, categoryFilter, typeFilter]);
 
+  //logic change
   // Helper functions for stock status
-  const getStockStatus = (quantity) => {
+  const getStockStatus = (product) => {
+    const quantity = product.quantity || 0;
+    const lowStockThreshold = product.lowstock || 10;
+    
     if (quantity === 0) return "Out of Stock";
-    if (quantity <= 10) return "Low Stock";
+    if (quantity <= lowStockThreshold) return "Low Stock";
     return "In Stock";
   };
 
-  const getStockVariant = (quantity) => {
+  const getStockVariant = (product) => {
+    const quantity = product.quantity || 0;
+    const lowStockThreshold = product.lowstock || 10;
+    
     if (quantity === 0) return "destructive";
-    if (quantity <= 10) return "secondary";
+    if (quantity <= lowStockThreshold) return "secondary";
     return "default";
   };
 
@@ -193,6 +200,7 @@ export default function GroupedProducts() {
           type: p.type || p.productType || p?.typeName || "",
           batches: new Set(),
           totalStock: 0,
+          lowstock: p.lowstock || 10, // Use the first product's lowstock threshold
         });
       }
       const entry = map.get(key);
@@ -324,8 +332,8 @@ export default function GroupedProducts() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={getStockVariant(g.totalStock)}>
-                              {getStockStatus(g.totalStock)}
+                            <Badge variant={getStockVariant({quantity: g.totalStock, lowstock: g.lowstock})}>
+                              {getStockStatus({quantity: g.totalStock, lowstock: g.lowstock})}
                             </Badge>
                           </TableCell>
                         </TableRow>

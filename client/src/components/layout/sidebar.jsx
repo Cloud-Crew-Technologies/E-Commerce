@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { useSidebar } from "@/lib/SidebarContext";
+import { useEffect, useRef } from "react";
 
 const menuItems = [
   { path: "/", icon: "dashboard", label: "Dashboard" },
@@ -19,10 +20,28 @@ export default function Sidebar() {
   const [location, setLocation] = useLocation();
   const { isOpen, toggleSidebar } = useSidebar(); // use context instead of local state
   const { logoutMutation } = useAuth();
+  const sidebarRef = useRef(null);
 
   const handleLogout = () => {
     logoutMutation.mutate();
   };
+
+  // Handle clicking outside sidebar to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        toggleSidebar();
+      }
+    };
+
+    // Add event listener for clicks outside
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Cleanup event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, toggleSidebar]);
 
   return (
     <>
@@ -36,6 +55,7 @@ export default function Sidebar() {
 
       {/* Sidebar */}
       <div
+        ref={sidebarRef}
         className={`fixed inset-y-0 left-0 w-64 bg-white material-elevation-4 z-40 transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
@@ -75,10 +95,10 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Overlay for mobile */}
+      {/* Overlay for mobile and desktop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={toggleSidebar}
         />
       )}

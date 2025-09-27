@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 
-const API_BASE = "https://ecommerceapi.skillhiveinnovations.com";
+const API_BASE = "http://localhost:3001";
 
 export async function throwIfResNotOk(res) {
   if (!res.ok) {
