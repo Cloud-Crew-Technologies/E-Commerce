@@ -66,7 +66,7 @@ export default function Dashboard() {
     try {
       setIsLoadingg(true);
       const response = await axios.get(
-        "http://localhost:3001/api/customers/get"
+        "https://saiapi.skillhiveinnovations.com/api/customers/get"
       );
       const data = Array.isArray(response.data)
         ? response.data
@@ -126,7 +126,7 @@ export default function Dashboard() {
     try {
       setIsLoadings(true);
       const response = await axios.get(
-        "http://localhost:3001/api/products/get"
+        "https://saiapi.skillhiveinnovations.com/api/products/get"
       );
 
       // Ensure we set an array - handle different response structures
@@ -169,7 +169,7 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "http://localhost:3001/api/orders/get"
+        "https://saiapi.skillhiveinnovations.com/api/orders/get"
       );
 
       // Ensure we set an array - handle different response structures

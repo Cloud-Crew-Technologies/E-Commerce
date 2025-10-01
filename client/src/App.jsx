@@ -22,6 +22,7 @@ import Types from "@/pages/types";
 import { ProtectedRoute } from "./lib/protected-route";
 import GroupedProducts from "@/pages/grouped-products";
 import CreateBatch from "@/pages/create-batch";
+import Report from "@/pages/Report";
 
 function Router() {
   return (
@@ -32,9 +33,10 @@ function Router() {
         <ProtectedRoute path="/stock" component={StockManagement} />
         <ProtectedRoute path="/grouped-products" component={GroupedProducts} />
         <ProtectedRoute path="/create-Stock" component={CreateBatch} />
-        {/* <ProtectedRoute path="/coupons" component={Coupons} /> */}
+        <ProtectedRoute path="/coupons" component={Coupons} />
         <ProtectedRoute path="/orders" component={Orders} />
         <ProtectedRoute path="/customers" component={Customers} />
+        <ProtectedRoute path="/reports" component={Report} />
         <ProtectedRoute path="/settings" component={StoreSettings} />
         <ProtectedRoute path="/categories" component={Categories} />
         <ProtectedRoute path="/types" component={Types} />

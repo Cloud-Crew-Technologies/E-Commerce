@@ -80,7 +80,7 @@ export default function UpdateStatusDialog({
           if (customerId) {
             try {
               const customerResponse = await axios.get(
-                `http://localhost:3001/api/customers/get/${customerId._id}`
+                `https://saiapi.skillhiveinnovations.com/api/customers/get/${customerId._id}`
               );
               
               const customerData = customerResponse.data?.data || customerResponse.data;
@@ -114,7 +114,7 @@ export default function UpdateStatusDialog({
 
           // Send WhatsApp message with the fetched phone number
           const message = await axios.post(
-            "http://localhost:3001/api/whatsapp/ship",
+            "https://saiapi.skillhiveinnovations.com/api/whatsapp/ship",
             {
               name: order.customerName,
               phone: customerPhone,

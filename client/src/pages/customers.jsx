@@ -97,7 +97,7 @@ export default function Customers() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "http://localhost:3001/api/customers/get"
+          "https://saiapi.skillhiveinnovations.com/api/customers/get"
         );
         const data = Array.isArray(response.data)
           ? response.data

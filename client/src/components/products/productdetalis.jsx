@@ -63,7 +63,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "http://localhost:3001/api/categories/get"
+          "https://saiapi.skillhiveinnovations.com/api/categories/get"
         );
 
         if (
@@ -94,7 +94,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
       try {
         setIsLoadingTypes(true);
         const response = await axios.get(
-          "http://localhost:3001/api/types/get"
+          "https://saiapi.skillhiveinnovations.com/api/types/get"
         );
 
         if (
@@ -127,7 +127,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
-          `http://localhost:3001/api/products/get/${productId}`
+          `https://saiapi.skillhiveinnovations.com/api/products/get/${productId}`
         );
 
         if (response.data && response.data.data) {
@@ -200,7 +200,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
 
       // Send FormData to backend
       const response = await axios.put(
-        `http://localhost:3001/api/products/update/${productId}`,
+        `https://saiapi.skillhiveinnovations.com/api/products/update/${productId}`,
         formData,
         {
           headers: {
@@ -237,7 +237,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
     axios.put(
-      `http://localhost:3001/api/products/update/${productId}`,
+      `https://saiapi.skillhiveinnovations.com/api/products/update/${productId}`,
       data
     );
   };
