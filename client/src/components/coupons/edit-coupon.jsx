@@ -60,7 +60,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
           toast({
             title: "Error",
             description:
-              "Failed to load coupon details. Please try again later.",
+              "Failed to load offer details. Please try again later.",
             variant: "destructive",
           });
         }
@@ -70,7 +70,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
           description:
             error.response?.data?.message ||
             error.message ||
-            "Failed to fetch coupon",
+            "Failed to fetch offer details.",
           variant: "destructive",
         });
       }
@@ -91,8 +91,8 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/coupons/getall"] });
       toast({
-        title: "Coupon updated",
-        description: "Coupon has been successfully updated.",
+        title: "Offer updated",
+        description: "Offer has been successfully updated.",
       });
       form.reset();
       onOpenChange(false);
@@ -114,7 +114,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Coupon</DialogTitle>
+          <DialogTitle>Edit Offer</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -124,7 +124,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Coupon Code</FormLabel>
+                  <FormLabel>Offer Code</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -143,7 +143,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Coupon Name</FormLabel>
+                  <FormLabel>Offer Name</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
@@ -217,7 +217,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
               <Button disabled={updateCouponMutation.isLoading} type="submit">
                 {updateCouponMutation.isLoading
                   ? "Updating..."
-                  : "Update Coupon"}
+                  : "Update Offer"}
               </Button>
             </div>
           </form>

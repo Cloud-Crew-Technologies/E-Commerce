@@ -45,8 +45,8 @@ export default function AddCouponDialog({ open, onOpenChange }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/coupons/getall"] });
       toast({
-        title: "Coupon created",
-        description: "Coupon has been successfully created.",
+        title: "Offer created",
+        description: "Offer has been successfully created.",
       });
       form.reset();
       onOpenChange(false);
@@ -73,10 +73,10 @@ export default function AddCouponDialog({ open, onOpenChange }) {
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <span className="material-icons mr-2">local_offer</span>
-            Create New Coupon
+            Create New Offer
           </DialogTitle>
           <DialogDescription>
-            Create a discount coupon for your customers
+            Create a discount offer for your customers
           </DialogDescription>
         </DialogHeader>
 
@@ -107,7 +107,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Coupon Name</FormLabel>
+                  <FormLabel>Offer Name</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., 20% Off Everything" {...field} />
                   </FormControl>
@@ -209,7 +209,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                 ) : (
                   <>
                     <span className="material-icons mr-2">add</span>
-                    Create Coupon
+                    Create Offer
                   </>
                 )}
               </Button>

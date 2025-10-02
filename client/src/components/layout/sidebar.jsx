@@ -13,7 +13,7 @@ const menuItems = [
   { path: "/grouped-products", icon: "view_list", label: "Grouped Stock" },
   { path: "/orders", icon: "shopping_cart", label: "Orders" },
   { path: "/customers", icon: "people", label: "Customers" },
-  { path: "/coupons", icon: "people", label: "Coupons" },
+  { path: "/coupons", icon: "people", label: "Offers" },
   { path: "/reports", icon: "assessment", label: "Reports" },
   { path: "/settings", icon: "settings", label: "Store Settings" },
 ];
@@ -25,12 +25,12 @@ export default function Sidebar() {
   const sidebarRef = useRef(null);
 
   const handleLogout = (event) => {
-    event.stopPropagation(); // Prevent event bubbling
+    event.stopPropagation();
     logoutMutation.mutate();
   };
 
   const handleNavigation = (path, event) => {
-    event.stopPropagation(); // Prevent event bubbling
+    event.stopPropagation();
     setLocation(path);
   };
 
@@ -42,7 +42,6 @@ export default function Sidebar() {
         sidebarRef.current &&
         !sidebarRef.current.contains(event.target)
       ) {
-        // Check if the clicked element is the hamburger button
         const hamburgerButton = event.target.closest("button[data-hamburger]");
         if (!hamburgerButton) {
           toggleSidebar();
@@ -50,10 +49,8 @@ export default function Sidebar() {
       }
     };
 
-    // Add event listener for clicks outside
     document.addEventListener("mousedown", handleClickOutside);
 
-    // Cleanup event listener
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -61,6 +58,15 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Overlay for mobile and desktop - positioned behind sidebar */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={toggleSidebar}
+          style={{ pointerEvents: "auto" }}
+        />
+      )}
+
       {/* Hamburger Button */}
       <button
         onClick={toggleSidebar}
@@ -101,24 +107,22 @@ export default function Sidebar() {
               {menuItems.map((item) => {
                 const isActive = location === item.path;
                 return (
-                  <div
-                    key={item.path}
-                    onClick={(event) => handleNavigation(item.path, event)}
-                    className={`nav-item flex items-center px-4 py-3 text-grey-700 rounded-lg cursor-pointer transition-colors ${
-                      isActive
-                        ? "bg-primary-100 text-primary-700"
-                        : "hover:bg-grey-100"
-                    }`}
-                  >
-                    <span className="material-icons mr-3 text-lg">
-                      {item.icon}
-                    </span>
-                    <span
-                      className="font-medium"
+                  <div key={item.path} className="w-full">
+                    <button
                       onClick={(event) => handleNavigation(item.path, event)}
+                      className={`nav-item w-full flex items-center px-4 py-3 text-grey-700 rounded-lg cursor-pointer transition-colors ${
+                        isActive
+                          ? "bg-primary-100 text-primary-700"
+                          : "hover:bg-grey-100"
+                      }`}
                     >
-                      {item.label}
-                    </span>
+                      <span className="material-icons mr-3 text-lg">
+                        {item.icon}
+                      </span>
+                      <span className="font-medium flex-1 text-left">
+                        {item.label}
+                      </span>
+                    </button>
                   </div>
                 );
               })}
@@ -139,14 +143,6 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-
-      {/* Overlay for mobile and desktop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30"
-          onClick={toggleSidebar}
-        />
-      )}
     </>
   );
 }

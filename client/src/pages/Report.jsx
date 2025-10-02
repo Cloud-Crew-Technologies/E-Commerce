@@ -56,7 +56,7 @@ export default function Report() {
       description:
         "Export Production information with products and expiry dates",
       icon: "📦",
-      requiresDate: false,
+      requiresDate: true,
     },
     {
       value: "orders",
@@ -139,7 +139,7 @@ export default function Report() {
     try {
       let url = `https://saiapi.skillhiveinnovations.com/api/${selectedReport}/get`;
 
-      // Add date filtering for orders and customers
+      // Add date filtering for orders and customers (server-side filtering)
       if (
         (selectedReport === "orders" || selectedReport === "customers") &&
         dateRange.from &&
@@ -204,6 +204,21 @@ export default function Report() {
                   };
                 }) || [],
             }));
+
+            // Apply date filtering for rbatch (client-side filtering)
+            if (selectedReport === "rbatch" && dateRange.from && dateRange.to) {
+              const fromDate = new Date(dateRange.from);
+              const toDate = new Date(dateRange.to);
+              // Set time to start and end of day for proper comparison
+              fromDate.setHours(0, 0, 0, 0);
+              toDate.setHours(23, 59, 59, 999);
+
+              processedData = processedData.filter((batch) => {
+                if (!batch.createdAt) return false;
+                const batchDate = new Date(batch.createdAt);
+                return batchDate >= fromDate && batchDate <= toDate;
+              });
+            }
 
             // Apply filters to the processed data
             if (
@@ -523,8 +538,16 @@ export default function Report() {
                   <div className="flex flex-wrap items-center gap-4">
                     {/* Report Type Selection */}
                     <div className="flex-1 min-w-48">
-                      <Label htmlFor="report-type" className="text-sm font-medium">Report Type</Label>
-                      <Select value={selectedReport} onValueChange={setSelectedReport}>
+                      <Label
+                        htmlFor="report-type"
+                        className="text-sm font-medium"
+                      >
+                        Report Type
+                      </Label>
+                      <Select
+                        value={selectedReport}
+                        onValueChange={setSelectedReport}
+                      >
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Choose a report type" />
                         </SelectTrigger>
@@ -541,49 +564,6 @@ export default function Report() {
                       </Select>
                     </div>
                     {/* Date Range for Orders */}
-                    {selectedReportInfo?.requiresDate && (
-                      <div className="flex gap-2">
-                        <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9">
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {dateRange.from ? format(dateRange.from, "MMM dd") : "From"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={dateRange.from}
-                              onSelect={(date) => {
-                                setDateRange((prev) => ({ ...prev, from: date }));
-                                setIsDatePickerOpen(false);
-                              }}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9">
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {dateRange.to ? format(dateRange.to, "MMM dd") : "To"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={dateRange.to}
-                              onSelect={(date) => {
-                                setDateRange((prev) => ({ ...prev, to: date }));
-                              }}
-                              disabled={(date) => dateRange.from && date < dateRange.from}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    )}
 
                     {/* Load Data Button */}
                     <Button
@@ -601,27 +581,86 @@ export default function Report() {
                     <div className="flex items-center gap-2">
                       <Label className="text-sm font-medium">Filters:</Label>
                     </div>
-                    
+
                     {/* Search */}
                     <div className="min-w-48">
                       <Input
                         placeholder="Search products..."
                         value={filters.search}
-                        onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                        onChange={(e) =>
+                          setFilters({ ...filters, search: e.target.value })
+                        }
                         className="h-9"
                       />
                     </div>
+                    <div className="flex gap-2">
+                      <Popover
+                        open={isDatePickerOpen}
+                        onOpenChange={setIsDatePickerOpen}
+                      >
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="h-9">
+                            <CalendarIcon className="mr-2 h-4" />
+                            {dateRange.from
+                              ? format(dateRange.from, "MMM dd")
+                              : "From"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="p-0">
+                          <Calendar
+                            mode="single"
+                            selected={dateRange.from}
+                            onSelect={(date) => {
+                              setDateRange((prev) => ({ ...prev, from: date }));
+                              setIsDatePickerOpen(false);
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
 
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" className="h-9">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateRange.to
+                              ? format(dateRange.to, "MMM dd")
+                              : "To"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className=" p-0">
+                          <Calendar
+                            mode="single"
+                            selected={dateRange.to}
+                            onSelect={(date) => {
+                              setDateRange((prev) => ({ ...prev, to: date }));
+                            }}
+                            disabled={(date) =>
+                              dateRange.from && date < dateRange.from
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     {/* Category */}
                     <div className="min-w-32">
-                      <Select value={filters.category} onValueChange={(value) => setFilters({ ...filters, category: value })}>
+                      <Select
+                        value={filters.category}
+                        onValueChange={(value) =>
+                          setFilters({ ...filters, category: value })
+                        }
+                      >
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Categories</SelectItem>
                           {categories.map((category) => (
-                            <SelectItem key={category._id} value={category.name}>
+                            <SelectItem
+                              key={category._id}
+                              value={category.name}
+                            >
                               {category.name}
                             </SelectItem>
                           ))}
@@ -631,7 +670,12 @@ export default function Report() {
 
                     {/* Type */}
                     <div className="min-w-32">
-                      <Select value={filters.types} onValueChange={(value) => setFilters({ ...filters, types: value })}>
+                      <Select
+                        value={filters.types}
+                        onValueChange={(value) =>
+                          setFilters({ ...filters, types: value })
+                        }
+                      >
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Type" />
                         </SelectTrigger>
@@ -650,7 +694,14 @@ export default function Report() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setFilters({ search: "", category: "all", types: "all", product: "all" })}
+                      onClick={() =>
+                        setFilters({
+                          search: "",
+                          category: "all",
+                          types: "all",
+                          product: "all",
+                        })
+                      }
                       className="h-9"
                     >
                       Clear

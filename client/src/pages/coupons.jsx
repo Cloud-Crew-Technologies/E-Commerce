@@ -175,7 +175,7 @@ export default function Coupons() {
                     <div className="text-3xl md:text-4xl font-bold text-blue-600">
                       {coupons.length}
                     </div>
-                    <div className="text-sm text-gray-600">Total Coupons</div>
+                    <div className="text-sm text-gray-600">Total Offers</div>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl md:text-4xl font-bold text-green-600">
@@ -185,7 +185,7 @@ export default function Coupons() {
                         ).length
                       }
                     </div>
-                    <div className="text-sm text-gray-600">Active Coupons</div>
+                    <div className="text-sm text-gray-600">Active Offers</div>
                   </div>
                   <div className="text-center">
                     <div className="text-3xl md:text-4xl font-bold text-orange-600">
@@ -211,10 +211,10 @@ export default function Coupons() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 mt-4 w-full gap-4">
             <div className="flex-1 min-w-0">
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
-                Coupons
+                Offers
               </h2>
               <p className="text-sm sm:text-base text-gray-600 mt-1">
-                Manage your discount coupons and promotional offers
+                Manage your discount offers and promotional offers
               </p>
             </div>
             <Button
@@ -254,7 +254,7 @@ export default function Coupons() {
               </div>
             </div>
             <div className="mt-2 text-xs text-gray-500">
-              Showing {filteredCoupons.length} of {coupons.length} coupons
+              Showing {filteredCoupons.length} of {coupons.length} offers
             </div>
           </div>
 
@@ -287,7 +287,7 @@ export default function Coupons() {
                   </svg>
                 </div>
                 <h3 className="text-xl font-medium text-gray-900 mb-2">
-                  No coupons match your filters
+                  No offers match your filters
                 </h3>
                 <p className="text-sm text-gray-600 mb-4 sm:mb-6">
                   Try adjusting or resetting the filters.
