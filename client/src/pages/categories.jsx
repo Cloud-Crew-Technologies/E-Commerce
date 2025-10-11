@@ -17,15 +17,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 
 export default function Categories() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newIsActive, setNewIsActive] = useState(true);
   const { toast } = useToast();
-  const [categories, setCategories] = useState([]); // Fixed: renamed from 'category' to 'categories'
+  const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [filter, setFilter] = useState("");
+  const [selectedFile, setSelectedFile] = useState("");
+  const [imagePreview, setImagePreview] = useState(null);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -64,9 +74,22 @@ export default function Categories() {
 
   const createCategoryMutation = useMutation({
     mutationFn: async (categoryData) => {
+      console.log(categoryData);
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('name', categoryData.name);
+      formData.append('isActive', categoryData.isActive);
+      formData.append('image', categoryData.image); // This matches the multer field name
+      
       const response = await axios.post(
-        "https://saiapi.skillhiveinnovations.com/api/categories/create",
-        categoryData
+        "https://saiapi.skillhiveinnovations.com/api/categories/createwithimage",
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
       return response.data;
     },
@@ -76,6 +99,8 @@ export default function Categories() {
       setNewName("");
       setNewIsActive(true);
       fetchCategories(); // Refresh the list
+      setSelectedFile(null);
+      setImagePreview(null);
     },
     onError: (error) => {
       console.error("Create category error:", error);
@@ -124,20 +149,55 @@ export default function Categories() {
       });
       return;
     }
+    console.log(selectedFile);
 
     createCategoryMutation.mutate({
       name: newName.trim(),
       isActive: newIsActive,
+      image: selectedFile,
     });
   };
 
   const filteredCategories = categories.filter((cat) =>
     cat.name?.toLowerCase().includes(filter.toLowerCase())
   );
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (limit to 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <div className=" bg-grey-50">
-        <Sidebar />
+      <Sidebar />
       <div className="ml-14 flex-1">
         <Header
           title="Categories"
@@ -179,6 +239,57 @@ export default function Categories() {
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                   />
+                </div>
+                {/* Image Upload Section */}
+                <div className="space-y-2">
+                  <label>Category Image *</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="mb-2"
+                      required
+                    />
+
+                    {imagePreview ? (
+                      <div className="space-y-2">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="max-h-40 w-full object-cover rounded"
+                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">
+                            Selected: {selectedFile?.name}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedFile(null);
+                              setImagePreview(null);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <span className="material-icons text-gray-400 text-4xl mb-2">
+                          cloud_upload
+                        </span>
+                        <p className="text-sm text-gray-600">
+                          Select an image file to upload
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          PNG, JPG up to 5MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Checkbox

@@ -48,14 +48,20 @@ export const CustomerSchema = new Schema({
 });
 
 export const CouponSchema = new Schema({
-  code: { type: String, required: true, unique: true },
-  name: { type: String, required: true },
-  discount: { type: Number, required: true, min: 1, max: 100 },
-  usageLimit: { type: Number, required: true, min: 1 },
+  code: { type: String },
+  name: { type: String },
+  discount: { type: Number, max: 100 },
+  usageLimit: { type: Number },
+  offerType: { type: String, required: true },
+  buyProduct: { type: String },
+  buyProductQuantity: { type: Number },
+  getProduct: { type: String },
+  getProductQuantity: { type: Number },
   usageCount: { type: Number, default: 0 },
   expiryDate: { type: Date, required: true },
+  imageUrl: { type: String },
   isActive: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
 });
 
 export const StoreSettingsSchema = new Schema({

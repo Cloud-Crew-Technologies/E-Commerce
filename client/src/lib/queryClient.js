@@ -14,11 +14,15 @@ export async function apiRequest(method, url, data) {
   // Get token from localStorage if it exists
   const token = localStorage.getItem("token");
 
+  const isFormData = typeof FormData !== "undefined" && data instanceof FormData;
+
   const options = {
     method: method,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: isFormData
+      ? {}
+      : {
+          "Content-Type": "application/json",
+        },
     credentials: "include", // Important for CORS with credentials
   };
 
@@ -28,7 +32,7 @@ export async function apiRequest(method, url, data) {
   }
 
   if (data) {
-    options.body = JSON.stringify(data);
+    options.body = isFormData ? data : JSON.stringify(data);
   }
 
   // Build absolute server URL so requests hit the backend port directly

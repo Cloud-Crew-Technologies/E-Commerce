@@ -1,12 +1,30 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import EditCouponDialog from "./edit-coupon";
+import axios from "axios";
 
 export default function CouponCard({ coupon, onEdit, onDelete }) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState(null);
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get(
+          "https://saiapi.skillhiveinnovations.com/api/products/get"
+        );
+        if (response.data && Array.isArray(response.data.products)) {
+          setProducts(response.data.products);
+        }
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const isExpired = new Date(coupon.expiryDate) < new Date();
   const isExpiringSoon =
@@ -65,9 +83,21 @@ export default function CouponCard({ coupon, onEdit, onDelete }) {
           <div className="flex-grow min-w-0">
             {/* Discount and Usage */}
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <span className="bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap shadow-sm">
-                {coupon.discount}% OFF
-              </span>
+              {coupon.offerType === "discount" ? (
+                <span className="bg-green-50 text-green-700 px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap shadow-sm">
+                  {coupon.discount}% OFF
+                </span>
+              ) : ( // product offer
+                <div className="flex flex-col gap-2">
+                  <span className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap shadow-sm">
+                    Buy: {products.find(p => p._id === coupon.buyProduct)?.name} ({coupon.buyProductQuantity})
+                  </span>
+                  <span className="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap shadow-sm">
+                    Get: {products.find(p => p._id === coupon.getProduct)?.name} ({coupon.getProductQuantity})
+                  </span>
+                </div>
+              )}
+
               <span className="bg-gray-100 text-gray-800 px-3 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap shadow-sm">
                 Used: {coupon.usageCount} / {coupon.usageLimit}
               </span>
