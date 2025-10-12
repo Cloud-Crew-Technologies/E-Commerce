@@ -320,7 +320,6 @@ export default function Report() {
               : "N/A",
             Batch: product.batch,
             "Product Name": product.name,
-            Description: product.description,
             Category: product.category,
             Type: product.type,
             "Produced Stock": product.producedStock || product.quantity,

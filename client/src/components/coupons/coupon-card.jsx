@@ -16,8 +16,13 @@ export default function CouponCard({ coupon, onEdit, onDelete }) {
         const response = await axios.get(
           "https://saiapi.skillhiveinnovations.com/api/products/get"
         );
-        if (response.data && Array.isArray(response.data.products)) {
+        
+        if (response.data && response.data.success && Array.isArray(response.data.data)) {
+          setProducts(response.data.data);
+        } else if (response.data && Array.isArray(response.data.products)) {
           setProducts(response.data.products);
+        } else if (Array.isArray(response.data)) {
+          setProducts(response.data);
         }
       } catch (error) {
         console.error("Error fetching products:", error);

@@ -46,8 +46,17 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
         const response = await axios.get(
           "https://saiapi.skillhiveinnovations.com/api/products/get"
         );
-        if (response.data && Array.isArray(response.data.products)) {
+        console.log("Products API response:", response.data);
+        
+        if (response.data && response.data.success && Array.isArray(response.data.data)) {
+          setProducts(response.data.data);
+        } else if (response.data && Array.isArray(response.data.products)) {
           setProducts(response.data.products);
+        } else if (Array.isArray(response.data)) {
+          setProducts(response.data);
+        } else {
+          console.warn("Unexpected products response structure:", response.data);
+          setProducts([]);
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -91,16 +100,24 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
 
         if (response.data && response.data.data) {
           const couponData = response.data.data;
+          console.log("Fetched coupon data:", couponData);
+          
           setOfferType(couponData.offerType || "discount");
+          
+          // Set image preview if imageUrl exists
+          if (couponData.imageUrl) {
+            setImagePreview(couponData.imageUrl);
+          }
+          
           form.reset({
             code: couponData.code || "",
             name: couponData.name || "",
             discount: couponData.discount || 0,
             usageLimit: couponData.usageLimit || 100,
-            expiryDate:
-              couponData.expiryDate ||
-              new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            isActive: couponData.isActive || true,
+            expiryDate: couponData.expiryDate 
+              ? new Date(couponData.expiryDate)
+              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            isActive: couponData.isActive !== undefined ? couponData.isActive : true,
             offerType: couponData.offerType || "discount",
             buyProduct: couponData.buyProduct || "",
             buyProductQuantity: couponData.buyProductQuantity || 0,
@@ -181,6 +198,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
       });
       form.reset();
       onOpenChange(false);
+      window.location.reload();
     },
     onError: (error) => {
       toast({
@@ -435,10 +453,11 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
+                                  <SelectItem value="Any">Any</SelectItem>
                                   {products.map((product) => (
                                     <SelectItem
                                       key={product._id}
-                                      value={product._id}
+                                      value={product.productID}
                                     >
                                       {product.name}
                                     </SelectItem>
@@ -502,10 +521,11 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
+                                  <SelectItem value="Any">Any</SelectItem>
                                   {products.map((product) => (
                                     <SelectItem
                                       key={product._id}
-                                      value={product._id}
+                                      value={product.productID}
                                     >
                                       {product.name}
                                     </SelectItem>

@@ -182,7 +182,13 @@ export default function AddProductDialog({ open, onOpenChange }) {
       formData.append("expiryDate", data.expiryDate);
       formData.append("benefits", data.benefits);
       formData.append("tax", data.tax);
-      formData.append("taxValue", (data.tax / 100) * data.rprice);
+      
+      // Calculate taxValue properly
+      const rpriceNum = parseFloat(data.rprice) || 0;
+      const taxNum = parseFloat(data.tax) || 0;
+      const taxValue = (taxNum / 100) * rpriceNum;
+      formData.append("taxValue", taxValue.toString());
+      
       formData.append("MRP", data.MRP);
       formData.append("lowstock", data.lowstock);
       formData.append("wsalesprice", data.wprice / (1 + salesvalue));

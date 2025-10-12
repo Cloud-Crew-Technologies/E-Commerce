@@ -97,9 +97,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/types/get"
-        );
+        const response = await axios.get("https://saiapi.skillhiveinnovations.com/api/types/get");
 
         if (
           response.data &&
@@ -249,33 +247,27 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
   const updateProductMutation = useMutation({
     mutationFn: async (data) => {
-      console.log("=== IMAGE UPDATE DEBUG ===");
-      console.log("selectedFile:", selectedFile);
-      console.log("selectedFile exists:", !!selectedFile);
-      if (selectedFile) {
-        console.log("selectedFile details:", {
-          name: selectedFile.name,
-          size: selectedFile.size,
-          type: selectedFile.type,
-        });
-      }
+      // Debug logging removed for performance
 
       // ALWAYS use FormData when updating products (even without image)
       const formData = new FormData();
-
+      const salesvalue = data.tax / 100;
       // Append all form fields
       formData.append("name", data.name || "");
-      formData.append("productID", data.productID || "");
-      formData.append("description", data.description || "");
-      formData.append("category", data.category || "");
-      formData.append("type", data.type || "");
-      formData.append("weight", data.weight ? data.weight.toString() : "0");
-      formData.append("isActive", data.isActive ? "true" : "false");
-      formData.append("benefits", data.benefits || "");
-      formData.append("wprice", data.wprice ? data.wprice.toString() : "0");
-      formData.append("rprice", data.rprice ? data.rprice.toString() : "0");
-      formData.append("expiryDate", data.expiryDate || "");
-      formData.append("tax", data.tax ? data.tax.toString() : "0");
+      formData.append("description", data.description);
+      formData.append("category", data.category);
+      formData.append("type", data.type);
+      formData.append("weight", data.weight);
+      formData.append("isActive", data.isActive);
+      formData.append("wprice", data.wprice);
+      formData.append("rprice", data.rprice);
+      formData.append("expiryDate", data.expiryDate);
+      formData.append("benefits", data.benefits);
+      formData.append("tax", data.tax);
+      formData.append("MRP", data.MRP);
+      formData.append("lowstock", data.lowstock);
+      formData.append("wsalesprice", data.wprice / (1 + salesvalue));
+      formData.append("rsalesprice", data.rprice / (1 + salesvalue));
 
       // Calculate taxValue properly
       const rpriceNum = parseFloat(data.rprice) || 0;
@@ -283,25 +275,9 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       const taxValue = (taxNum / 100) * rpriceNum;
       formData.append("taxValue", taxValue.toString());
 
-      // Critical: Always append image field (even if null) to trigger image update logic
+      // Append image if selected
       if (selectedFile) {
         formData.append("image", selectedFile);
-        console.log("✅ Appending NEW image file:", selectedFile.name);
-      } else {
-        console.log("⚠️ No new image selected - keeping existing image");
-        // Don't append anything for image field if no new image is selected
-      }
-
-      // Debug: Log all FormData contents
-      console.log("FormData contents being sent:");
-      for (let pair of formData.entries()) {
-        if (pair[1] instanceof File) {
-          console.log(
-            `${pair[0]}: FILE - ${pair[1].name} (${pair[1].size} bytes)`
-          );
-        } else {
-          console.log(`${pair[0]}: ${pair[1]}`);
-        }
       }
 
       // Send FormData to backend
@@ -315,8 +291,6 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
         }
       );
 
-      console.log("✅ Backend response:", response.data);
-      console.log("=== END IMAGE UPDATE DEBUG ===");
       return response.data;
     },
     onSuccess: (data) => {
@@ -333,7 +307,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       if (data.data && data.data.imageUrl) {
         setImagePreview(data.data.imageUrl);
       }
-
+      window.location.reload();
       onOpenChange(false);
     },
     onError: (error) => {
