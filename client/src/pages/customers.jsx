@@ -268,15 +268,21 @@ export default function Customers() {
       { header: "Country", dataKey: "country" },
     ];
 
-    const rows = filteredAndSortedCustomers.map((product) => ({
-      name: product.name,
-      mail: product.email,
-      phone: product.phone,
-      address: product.address,
-      city: product.city,
-      PinCode: product.pincode,
-      state: product.state,
-      country: product.country,
+    const rows = filteredAndSortedCustomers.map((customer) => ({
+      name: customer.name,
+      mail: customer.email,
+      phone: customer.primaryPhone || 
+             (customer.phoneNumbers && customer.phoneNumbers.length > 0 ? customer.phoneNumbers[0].phone : "N/A"),
+      address: customer.primaryAddress?.address || 
+               (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].address : "N/A"),
+      city: customer.primaryAddress?.city || 
+            (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].city : "N/A"),
+      PinCode: customer.primaryAddress?.pincode || 
+               (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].pincode : "N/A"),
+      state: customer.primaryAddress?.state || 
+             (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].state : "N/A"),
+      country: customer.primaryAddress?.country || 
+               (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].country : "N/A"),
     }));
 
     autoTable(doc, {
@@ -316,15 +322,21 @@ export default function Customers() {
 
     saveToLocalStorage("exportedCustomerData", filteredAndSortedCustomers);
 
-    const wsData = filteredAndSortedCustomers.map((product) => ({
-      Name: product.name,
-      Mail: product.email,
-      Phone: product.phone,
-      Address: product.address,
-      City: product.city,
-      State: product.state,
-      PinCode: product.pincode,
-      Country: product.country,
+    const wsData = filteredAndSortedCustomers.map((customer) => ({
+      Name: customer.name,
+      Mail: customer.email,
+      Phone: customer.primaryPhone || 
+             (customer.phoneNumbers && customer.phoneNumbers.length > 0 ? customer.phoneNumbers[0].phone : "N/A"),
+      Address: customer.primaryAddress?.address || 
+               (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].address : "N/A"),
+      City: customer.primaryAddress?.city || 
+            (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].city : "N/A"),
+      State: customer.primaryAddress?.state || 
+             (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].state : "N/A"),
+      PinCode: customer.primaryAddress?.pincode || 
+               (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].pincode : "N/A"),
+      Country: customer.primaryAddress?.country || 
+               (customer.addresses && customer.addresses.length > 0 ? customer.addresses[0].country : "N/A"),
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(wsData);
@@ -558,7 +570,10 @@ export default function Customers() {
                                 </Stack>
                               </TableCell>
                               <TableCell>{customer.email}</TableCell>
-                              <TableCell>{customer.phone || "N/A"}</TableCell>
+                              <TableCell>
+                                {customer.primaryPhone || 
+                                 (customer.phoneNumbers && customer.phoneNumbers.length > 0 ? customer.phoneNumbers[0].phone : "N/A")}
+                              </TableCell>
                               <TableCell>
                                 <Badge
                                   color={
@@ -720,21 +735,88 @@ export default function Customers() {
                   </Typography>
 
                   <Stack spacing={1} pl={2}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <PhoneIcon color="action" />
-                      <Typography>{selectedCustomer.phone || "N/A"}</Typography>
-                    </Stack>
+                    {/* Primary Phone */}
+                    {selectedCustomer.primaryPhone && (
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <PhoneIcon color="action" />
+                        <Typography>
+                          {selectedCustomer.primaryPhone} (Primary)
+                        </Typography>
+                      </Stack>
+                    )}
 
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <LocationOnIcon color="action" />
-                      <Typography>
-                        {selectedCustomer.address + ", " || "N/A"}
-                        {selectedCustomer.city + ", " || "N/A"}{" "}
-                        {selectedCustomer.state + ", " || "N/A"}
-                        {selectedCustomer.country + ", " || "N/A"}
-                        {selectedCustomer.pincode || "N/A"}
-                      </Typography>
-                    </Stack>
+                    {/* Additional Phone Numbers */}
+                    {selectedCustomer.phoneNumbers && selectedCustomer.phoneNumbers.length > 0 && (
+                      <Stack spacing={1}>
+                        {selectedCustomer.phoneNumbers.map((phone, index) => (
+                          <Stack key={index} direction="row" alignItems="center" spacing={1}>
+                            <PhoneIcon color="action" />
+                            <Typography>
+                              {phone.phone} ({phone.label || "Additional"})
+                            </Typography>
+                          </Stack>
+                        ))}
+                      </Stack>
+                    )}
+
+                    {/* Primary Address */}
+                    {selectedCustomer.primaryAddress && selectedCustomer.primaryAddress.address && (
+                      <Stack direction="row" alignItems="flex-start" spacing={1}>
+                        <LocationOnIcon color="action" sx={{ mt: 0.5 }} />
+                        <Stack>
+                          <Typography variant="subtitle2" fontWeight="medium">
+                            Primary Address:
+                          </Typography>
+                          <Typography>
+                            {selectedCustomer.primaryAddress.address}
+                            {selectedCustomer.primaryAddress.city && `, ${selectedCustomer.primaryAddress.city}`}
+                            {selectedCustomer.primaryAddress.state && `, ${selectedCustomer.primaryAddress.state}`}
+                            {selectedCustomer.primaryAddress.pincode && ` - ${selectedCustomer.primaryAddress.pincode}`}
+                            {selectedCustomer.primaryAddress.country && `, ${selectedCustomer.primaryAddress.country}`}
+                          </Typography>
+                        </Stack>
+                      </Stack>
+                    )}
+
+                    {/* Additional Addresses */}
+                    {selectedCustomer.addresses && selectedCustomer.addresses.length > 0 && (
+                      <Stack spacing={1}>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          Additional Addresses:
+                        </Typography>
+                        {selectedCustomer.addresses.map((address, index) => (
+                          <Stack key={index} direction="row" alignItems="flex-start" spacing={1}>
+                            <LocationOnIcon color="action" sx={{ mt: 0.5 }} />
+                            <Stack>
+                              <Typography variant="body2" fontWeight="medium">
+                                {address.label || `Address ${index + 1}`}
+                              </Typography>
+                              <Typography variant="body2">
+                                {address.address}
+                                {address.city && `, ${address.city}`}
+                                {address.state && `, ${address.state}`}
+                                {address.pincode && ` - ${address.pincode}`}
+                                {address.country && `, ${address.country}`}
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                        ))}
+                      </Stack>
+                    )}
+
+                    {/* Fallback for old data structure */}
+                    {!selectedCustomer.primaryAddress && !selectedCustomer.addresses && (
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <LocationOnIcon color="action" />
+                        <Typography>
+                          {selectedCustomer.address + ", " || "N/A"}
+                          {selectedCustomer.city + ", " || "N/A"}{" "}
+                          {selectedCustomer.state + ", " || "N/A"}
+                          {selectedCustomer.country + ", " || "N/A"}
+                          {selectedCustomer.pincode || "N/A"}
+                        </Typography>
+                      </Stack>
+                    )}
                   </Stack>
 
                   <Divider />

@@ -333,7 +333,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                       <FormItem>
                         <FormLabel className="flex items-center gap-2 font-semibold">
                           <span className="material-icons text-sm">tag</span>
-                          Coupon Code
+                          Offer Code
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -360,6 +360,38 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                         </FormLabel>
                         <FormControl>
                           <Input className="h-12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2 font-semibold">
+                          <span className="material-icons text-sm">
+                            toggle_on
+                          </span>
+                          Active Status
+                        </FormLabel>
+                        <FormControl>
+                          <Select
+                            onValueChange={(value) =>
+                              field.onChange(value === "true")
+                            }
+                            value={field.value.toString()}
+                          >
+                            <SelectTrigger className="h-12">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">Active</SelectItem>
+                              <SelectItem value="false">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

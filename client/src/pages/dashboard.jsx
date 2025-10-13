@@ -383,7 +383,7 @@ export default function Dashboard() {
               <>
                 <StatCard
                   title="Total Revenue"
-                  value={`₹${totalSum || "0"}`}
+                  value={`₹${totalSum.toFixed(2) || "0"}`}
                   icon="currency_rupee"
                   color="green"
                   trend={`+${revenueGrowthPercentage}% from last month`}

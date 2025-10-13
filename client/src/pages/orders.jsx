@@ -46,7 +46,7 @@ const COMPANY_DETAILS = {
 };
 
 // Import company logo (you may need to adjust the path)
-import image from "@/assets/company_logo.png";
+import image from "@/assets/logo.png";  
 
 export default function Orders() {
   const [search, setSearch] = useState("");
@@ -563,58 +563,12 @@ export default function Orders() {
     const gstStateCode = orderDetails?.gstStateCode || "33"; // Default to Tamil Nadu code if not available
     const isIntraState = gstStateCode === "33"; // Check if transaction is within Tamil Nadu
 
-    // Calculate totals based on sales prices from detailed product data
+    // Calculate totals - will be calculated in the items loop below
     let totalQtySalesPrice = 0;
     let totalTaxValue = 0;
     let totalQty = 0;
-
-    orderDetails.items?.forEach((item) => {
-      const isWholesaleEligible = orderDetails?.isWholesaleEligible || false;
-      const productId = item.productID || item.productId;
-      const detailedProduct = detailedProductData[productId];
-
-      console.log(`PDF Calculation for ${productId}:`, {
-        detailedProduct,
-        isWholesaleEligible,
-        rsalesprice: detailedProduct?.rsalesprice,
-        wsalesprice: detailedProduct?.wsalesprice,
-      });
-
-      // Use sales prices from detailed product data
-      const retailSalesPrice = detailedProduct
-        ? extractDecimalValue(detailedProduct.rsalesprice) ||
-          extractDecimalValue(detailedProduct.rprice) ||
-          0
-        : extractDecimalValue(item.rsalesprice) ||
-          extractDecimalValue(item.rprice) ||
-          extractDecimalValue(item.price) ||
-          0;
-
-      const wholesaleSalesPrice = detailedProduct
-        ? extractDecimalValue(detailedProduct.wsalesprice) ||
-          extractDecimalValue(detailedProduct.wprice) ||
-          0
-        : extractDecimalValue(item.wsalesprice) ||
-          extractDecimalValue(item.wprice) ||
-          0;
-
-      const effectiveSalesPrice =
-        isWholesaleEligible && wholesaleSalesPrice > 0
-          ? wholesaleSalesPrice
-          : retailSalesPrice;
-
-      console.log(
-        `Effective sales price for ${productId}: ${effectiveSalesPrice}`
-      );
-
-      const qtySalesPriceTotal = effectiveSalesPrice * (item.quantity || 0);
-      const taxRate = parseFloat(detailedProduct?.tax || item.tax || 5);
-      const taxAmount = qtySalesPriceTotal * (taxRate / 100);
-
-      totalQtySalesPrice += qtySalesPriceTotal;
-      totalTaxValue += taxAmount;
-      totalQty += item.quantity || 0;
-    });
+    let freeGiftsCount = 0;
+    const shippingtax = orderDetails?.deliveryTax || 0;
 
     console.log("PDF Totals:", {
       totalQtySalesPrice,
@@ -624,21 +578,10 @@ export default function Orders() {
       gstStateCode,
     });
 
-    // Calculate GST based on state code
+    // GST calculation will be done after items loop
     let cgst = 0;
     let sgst = 0;
     let igst = 0;
-
-    if (isIntraState) {
-      // Intra-state: Split tax into CGST and SGST
-      cgst = (totalTaxValue / 2).toFixed(2);
-      sgst = (totalTaxValue / 2).toFixed(2);
-    } else {
-      // Inter-state: Use IGST
-      igst = totalTaxValue.toFixed(2);
-    }
-
-    const grandTotal = totalQtySalesPrice + totalTaxValue;
 
     // Add watermark first (behind all content)
     addWatermark();
@@ -653,7 +596,7 @@ export default function Orders() {
 
     // Company Logo Area
     try {
-      doc.addImage(image, "PNG", 5, 5, 14, 22);
+      doc.addImage(image, "PNG", 5, 5, 20, 22);
     } catch (error) {
       console.error("Error adding logo image:", error);
       // Fallback to colored box with text if image fails
@@ -670,18 +613,18 @@ export default function Orders() {
     doc.setTextColor(...primaryColor);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(COMPANY_DETAILS.name, 22, 11);
+    doc.text(COMPANY_DETAILS.name, 26, 11);
 
     doc.setTextColor(...secondaryColor);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(COMPANY_DETAILS.slogan, 22, 16);
+    doc.text(COMPANY_DETAILS.slogan, 26, 16);
 
     doc.setTextColor(...darkGray);
     doc.setFontSize(6.5);
-    doc.text(COMPANY_DETAILS.address, 22, 20.5);
-    doc.text(COMPANY_DETAILS.city, 22, 24);
-    doc.text(`GSTIN: ${COMPANY_DETAILS.gst}`, 22, 27.5);
+    doc.text(COMPANY_DETAILS.address, 26, 20.5);
+    doc.text(COMPANY_DETAILS.city, 26, 24);
+    doc.text(`GSTIN: ${COMPANY_DETAILS.gst}`, 26, 27.5);
 
     // Invoice Title (top right) with accent background
     doc.setTextColor(...primaryColor);
@@ -759,7 +702,7 @@ export default function Orders() {
     doc.text(addressLines, 8, billToContentY + 15);
 
     // Payment method badge - TOP RIGHT
-    const paymentText = paymentMethod === "razorpay" ? "Online" : "COD";
+    const paymentText = paymentMethod === "razorpay" ? "Online" : "Online";
     const paymentBoxX = pageWidth - 45;
     const paymentBoxY = billToContentY;
 
@@ -778,30 +721,31 @@ export default function Orders() {
 
     yPosition += 35;
 
-    // Items Table Header with enhanced design
-    addBox(5, yPosition, pageWidth - 10, 9, [240, 253, 244], borderColor, 0.5);
+    // Items Table Header - Clean spreadsheet style
+    addBox(5, yPosition, pageWidth - 10, 9, [248, 250, 252], borderColor, 0.5);
 
-    // Add top accent line
-    doc.setDrawColor(...accentColor);
-    doc.setLineWidth(0.8);
-    doc.line(5, yPosition, pageWidth - 5, yPosition);
-
-    doc.setTextColor(...primaryColor);
+    doc.setTextColor(...darkGray);
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "bold");
-    doc.text("S.No", 8, yPosition + 6);
-    doc.text("Product", 25, yPosition + 6);
-    doc.text("Qty", 90, yPosition + 6, { align: "center" });
-    doc.text("Price (Rs)", 115, yPosition + 6, { align: "center" });
-    doc.text("Value (Rs)", 140, yPosition + 6, { align: "center" });
-    doc.text("Tax%", 165, yPosition + 6, { align: "center" });
-    doc.text("Total Value (Rs)", pageWidth - 8, yPosition + 6, {
-      align: "right",
-    });
+
+    // Column headers with proper spacing
+    doc.text("Item", 8, yPosition + 6);
+    doc.text("Qty", 50, yPosition + 6, { align: "center" });
+    doc.text("Retail Price", 70, yPosition + 6, { align: "center" });
+    doc.text("Value", 100, yPosition + 6, { align: "center" });
+    doc.text("Discount %", 125, yPosition + 6, { align: "center" });
+    doc.text("Value After Discount", 150, yPosition + 6, { align: "center" });
+    doc.text("Tax%", 180, yPosition + 6, { align: "center" });
+    doc.text("Total", pageWidth - 8, yPosition + 6, { align: "right" });
 
     yPosition += 11;
 
-    // Items rows with alternating colors
+    // Items rows - Clean spreadsheet style
+    // Note: totalQty is already declared above
+    let totalValue = 0;
+    let totalValueAfterDiscount = 0;
+    let totalItemTotals = 0; // For the final total column
+
     orderDetails.items?.forEach((item, index) => {
       if (yPosition > pageHeight - 100) {
         doc.addPage();
@@ -809,6 +753,7 @@ export default function Orders() {
         yPosition = 10;
       }
 
+      const isFreeItem = (item.price || 0) === 0;
       const rowHeight = 11;
       const rowBgColor = index % 2 === 0 ? whiteBg : [249, 250, 251];
       addBox(
@@ -822,64 +767,119 @@ export default function Orders() {
       );
 
       const itemName = item.name || item.productName || "Unknown Product";
+      const displayName = isFreeItem ? `${itemName} (FREE GIFT)` : itemName;
       const isWholesaleEligible = orderDetails?.isWholesaleEligible || false;
       const productId = item.productID || item.productId;
       const detailedProduct = detailedProductData[productId];
 
-      // Use sales prices from detailed product data
-      const retailSalesPrice = detailedProduct
-        ? extractDecimalValue(detailedProduct.rsalesprice) ||
-          extractDecimalValue(detailedProduct.rprice) ||
-          0
-        : extractDecimalValue(item.rsalesprice) ||
-          extractDecimalValue(item.rprice) ||
-          extractDecimalValue(item.price) ||
+      // Calculate pricing based on item type
+      const retailPrice = isFreeItem
+        ? 0
+        : detailedProduct
+        ? extractDecimalValue(detailedProduct.rsalesprice) || 0
+        : extractDecimalValue(item.rsalesprice) || 0
           0;
 
-      const wholesaleSalesPrice = detailedProduct
-        ? extractDecimalValue(detailedProduct.wsalesprice) ||
-          extractDecimalValue(detailedProduct.wprice) ||
-          0
-        : extractDecimalValue(item.wsalesprice) ||
-          extractDecimalValue(item.wprice) ||
-          0;
+      const wholesalePrice = isFreeItem
+        ? 0
+        : detailedProduct
+        ? extractDecimalValue(detailedProduct.wprice) || 0
+        : extractDecimalValue(item.wprice) || 0;
 
-      const effectiveSalesPrice =
-        isWholesaleEligible && wholesaleSalesPrice > 0
-          ? wholesaleSalesPrice
-          : retailSalesPrice;
+      const effectivePrice =
+        isWholesaleEligible && wholesalePrice > 0
+          ? wholesalePrice
+          : retailPrice;
 
-      const qtySalesPriceTotal = effectiveSalesPrice * (item.quantity || 0);
-      const taxRate = parseFloat(detailedProduct?.tax || item.tax || 5);
-      const taxAmount = qtySalesPriceTotal * (taxRate / 100);
-      const itemTotal = qtySalesPriceTotal + taxAmount;
+      // Calculate discount based on applied coupons
+      let itemDiscountAmount = 0;
+      let discountPercent = 0;
+
+      const itemValue = effectivePrice * (item.quantity || 0);
+
+      if (
+        !isFreeItem &&
+        orderDetails.appliedCoupons &&
+        orderDetails.appliedCoupons.length > 0
+      ) {
+        // Calculate total item values for proportional discount distribution
+        const totalItemValues = orderDetails.items
+          .filter((item) => (item.price || 0) > 0)
+          .reduce((sum, item) => {
+            const productId = item.productID || item.productId;
+            const detailedProduct = detailedProductData[productId];
+            const retailPrice = detailedProduct
+              ? extractDecimalValue(detailedProduct.rsalesprice) || 0
+              : extractDecimalValue(item.rsalesprice) ||
+                extractDecimalValue(item.price) ||
+                0;
+            return sum + retailPrice * (item.quantity || 0);
+          }, 0);
+
+        if (totalItemValues > 0) {
+          const totalDiscount = orderDetails.appliedCoupons.reduce(
+            (sum, coupon) => {
+              return sum + (parseInt(coupon.discount) || 0);
+            },
+            0
+          );
+          discountPercent = totalItemValues > 0 ? totalDiscount : 0;
+          itemDiscountAmount = itemValue * (totalDiscount / 100);
+        }
+      }
+
+      const valueAfterDiscount = itemValue - itemDiscountAmount;
+
+      const taxRate = parseInt(detailedProduct?.tax || item.tax || 0);
+      const taxAmount = valueAfterDiscount * (taxRate / 100);
+      const itemTotal = valueAfterDiscount + taxAmount;
+
+      // Update totals
+      totalQty += item.quantity || 0;
+      totalValue += itemValue;
+      totalValueAfterDiscount += valueAfterDiscount;
+      totalItemTotals += itemTotal; // Add the final item total (valueAfterDiscount + tax)
+      totalQtySalesPrice += itemValue;
+      totalTaxValue += taxAmount;
+      console.log(totalTaxValue);
+      console.log(shippingtax);
 
       doc.setTextColor(...darkGray);
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "normal");
 
-      doc.text((index + 1).toString(), 8, yPosition + 7);
-
+      // Item name (left-aligned)
       const truncatedName =
-        itemName.length > 22 ? itemName.substring(0, 19) + "..." : itemName;
-      doc.text(truncatedName, 25, yPosition + 7);
+        displayName.length > 15
+          ? displayName.substring(0, 12) + "..."
+          : displayName;
+      doc.text(truncatedName, 8, yPosition + 7);
 
-      doc.text((item.quantity || 0).toString(), 90, yPosition + 7, {
+      // Quantity (center-aligned)
+      doc.text((item.quantity || 0).toString(), 50, yPosition + 7, {
         align: "center",
       });
 
-      doc.text(effectiveSalesPrice.toFixed(2), 115, yPosition + 7, {
+      // Retail Price (center-aligned)
+      doc.text(effectivePrice.toFixed(2), 70, yPosition + 7, {
         align: "center",
       });
 
-      doc.text(qtySalesPriceTotal.toFixed(2), 140, yPosition + 7, {
+      // Value (center-aligned)
+      doc.text(itemValue.toFixed(2), 100, yPosition + 7, { align: "center" });
+
+      // Discount % (center-aligned)
+      doc.text(discountPercent + "%", 125, yPosition + 7, { align: "center" });
+
+      // Value After Discount (center-aligned)
+      doc.text(valueAfterDiscount.toFixed(2), 150, yPosition + 7, {
         align: "center",
       });
 
-      doc.text(taxRate + "%", 165, yPosition + 7, {
-        align: "center",
-      });
+      // Tax % (center-aligned)
+      doc.text(taxRate + "%", 180, yPosition + 7, { align: "center" });
 
+      // Total (right-aligned)
       doc.setFont("helvetica", "bold");
       doc.text(itemTotal.toFixed(2), pageWidth - 8, yPosition + 7, {
         align: "right",
@@ -890,111 +890,181 @@ export default function Orders() {
 
     yPosition += 3;
 
-    // Totals Row - aligned with table columns with green theme
-    const rowHeight = 11;
+    // Calculate GST based on state code - NOW that totalTaxValue is calculated
+    if (isIntraState) {
+      // Intra-state: Split tax into CGST and SGST
+      cgst = (totalTaxValue / 2).toFixed(2);
+      sgst = (totalTaxValue / 2).toFixed(2);
+    } else {
+      // Inter-state: Use IGST
+      igst = totalTaxValue.toFixed(2);
+    }
+
+    // Totals Row - matching the image style
+    const totalsRowHeight = 11;
     addBox(
       5,
       yPosition,
       pageWidth - 10,
-      rowHeight,
-      [220, 252, 231],
-      accentColor
+      totalsRowHeight,
+      [248, 250, 252], // Light gray background
+      borderColor,
+      0.5
     );
 
-    doc.setTextColor(...primaryColor);
-    doc.setFontSize(8);
+    doc.setTextColor(...darkGray);
+    doc.setFontSize(7.5);
     doc.setFont("helvetica", "bold");
 
-    // Label for totals
-    doc.text("TOTAL:", 48, yPosition + 7);
-
-    // Total Qty (aligned with Qty column)
-    doc.text(totalQty.toString(), 90, yPosition + 7, {
+    // Total row data
+    doc.text("Total", 8, yPosition + 7);
+    doc.text(totalQty.toString(), 50, yPosition + 7, { align: "center" });
+    doc.text("", 70, yPosition + 7, { align: "center" }); // Empty for retail price
+    doc.text(totalValue.toFixed(2), 100, yPosition + 7, { align: "center" });
+    doc.text("", 125, yPosition + 7, { align: "center" }); // Empty for discount %
+    doc.text(totalValueAfterDiscount.toFixed(2), 150, yPosition + 7, {
       align: "center",
     });
+    doc.text("", 180, yPosition + 7, { align: "center" }); // Empty for tax %
+    doc.text(totalItemTotals.toFixed(2), pageWidth - 8, yPosition + 7, { align: "right" }); // Total of all item totals
 
-    // Total Value (aligned with Value column)
-    doc.text(formatINR(totalQtySalesPrice), 140, yPosition + 7, {
-      align: "center",
-    });
+    yPosition += totalsRowHeight + 5;
+
+    // Applied Coupons Section (if any)
+
+    // Totals Row - aligned with table columns with green theme
+    const rowHeight = 1;
+    // addBox(
+    //   5,
+    //   yPosition,
+    //   pageWidth - 10,
+    //   rowHeight,
+    //   [220, 252, 231],
+    //   accentColor
+    // );
+
+    // doc.setTextColor(...primaryColor);
+    // doc.setFontSize(8);
+    // doc.setFont("helvetica", "bold");
+
+    // // Label for totals
+    // doc.text("TOTAL:", 48, yPosition + 7);
+
+    // // Total Qty (aligned with Qty column)
+    // doc.text(totalQty.toString(), 90, yPosition + 7, {
+    //   align: "center",
+    // });
+
+    // // Total Value (aligned with Value column)
+    // doc.text(formatINR(totalQtySalesPrice), 140, yPosition + 7, {
+    //   align: "center",
+    // });
 
     yPosition += rowHeight + 5;
 
-    // Tax breakdown section - Dynamic height based on GST type
-    const taxBoxWidth = 105;
-    const taxBoxX = 45;
-    const taxBoxHeight = isIntraState ? 40 : 35; // Extra space for CGST+SGST
+    // Calculate discount amount first
+    const discountAmount =
+      orderDetails.appliedCoupons?.reduce((sum, coupon) => {
+        // Use 'discount' field if available, otherwise fallback to 'discountAmount'
+        return sum + (coupon.discountAmount || 0);
+      }, 0) || 0;
 
-    // Main box with subtle border
+    // Order Summary Section - Clean format like the image
+    const summaryBoxWidth = 120;
+    const summaryBoxX = 35;
+    const summaryBoxHeight = 50;
+
     addBox(
-      taxBoxX,
+      summaryBoxX,
       yPosition,
-      taxBoxWidth,
-      taxBoxHeight,
+      summaryBoxWidth,
+      summaryBoxHeight,
       whiteBg,
       borderColor,
       0.5
     );
 
-    const taxContentY = yPosition + 6;
-    const labelX = taxBoxX + 4;
-    const valueX = taxBoxX + taxBoxWidth - 4;
+    const summaryContentY = yPosition + 6;
+    const summaryLabelX = summaryBoxX + 4;
+    const summaryValueX = summaryBoxX + summaryBoxWidth - 4;
 
     doc.setTextColor(...darkGray);
     doc.setFontSize(7.5);
     doc.setFont("helvetica", "normal");
 
-    // Total Goods Value
-    doc.text("Total Goods Value:", labelX, taxContentY);
+    // Product Value
+    doc.text("Product Value:", summaryLabelX, summaryContentY);
     doc.setFont("helvetica", "bold");
-    doc.text("Rs", valueX - 10, taxContentY, { align: "right" });
-    doc.text(`${totalQtySalesPrice.toFixed(2)}`, valueX, taxContentY, {
+    doc.text("Rs", summaryValueX - 10, summaryContentY, { align: "right" });
+    doc.text(totalValue.toFixed(2), summaryValueX, summaryContentY, {
       align: "right",
     });
 
-    // Delivery Charges
+    // Discount - use the actual discount from coupons
     doc.setFont("helvetica", "normal");
-    doc.text("Delivery:", labelX, taxContentY + 5);
+    doc.text("Discount:", summaryLabelX, summaryContentY + 5);
     doc.setFont("helvetica", "bold");
-    doc.text("Rs", valueX - 10, taxContentY + 5, { align: "right" });
+    doc.text("Rs", summaryValueX - 10, summaryContentY + 5, { align: "right" });
+    doc.text((totalValue-totalValueAfterDiscount).toFixed(2), summaryValueX, summaryContentY + 5, {
+      align: "right",
+    });
+
+    // Sub Total
+    doc.setFont("helvetica", "normal");
+    doc.text("Sub Total:", summaryLabelX, summaryContentY + 10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Rs", summaryValueX - 10, summaryContentY + 10, { align: "right" });
     doc.text(
-      `${(orderDetails.delivery || 0).toFixed(2)}`,
-      valueX,
-      taxContentY + 5,
-      {
-        align: "right",
-      }
+      (totalItemTotals).toFixed(2),
+      summaryValueX,
+      summaryContentY + 10,
+      { align: "right" }
+    );
+
+    // Delivery
+    doc.setFont("helvetica", "normal");
+    doc.text("Delivery:", summaryLabelX, summaryContentY + 15);
+    doc.setFont("helvetica", "bold");
+    doc.text("Rs", summaryValueX - 10, summaryContentY + 15, { align: "right" });
+    doc.text(
+      (orderDetails.delivery || 0).toFixed(2),
+      summaryValueX,
+      summaryContentY + 15,
+      { align: "right" }
     );
 
     // GST Display - Conditional based on state
+    const deliveryTax = (orderDetails.deliveryTax || 0); // 5% tax on delivery
+    const totalGST = totalTaxValue + deliveryTax;
+    
     if (isIntraState) {
       // Show CGST and SGST for intra-state (State Code 33)
       doc.setFont("helvetica", "normal");
-      doc.text("SGST:", labelX, taxContentY + 10);
+      doc.text("SGST:", summaryLabelX, summaryContentY + 20);
       doc.setFont("helvetica", "bold");
-      doc.text("Rs", valueX - 10, taxContentY + 10, { align: "right" });
-      doc.text(`${sgst}`, valueX, taxContentY + 10, { align: "right" });
+      doc.text("Rs", summaryValueX - 10, summaryContentY + 20, { align: "right" });
+      doc.text(`${(parseFloat(sgst) + parseFloat(shippingtax) / 2).toFixed(2)}`, summaryValueX, summaryContentY + 20, { align: "right" });
 
       doc.setFont("helvetica", "normal");
-      doc.text("CGST:", labelX, taxContentY + 15);
+      doc.text("CGST:", summaryLabelX, summaryContentY + 25);
       doc.setFont("helvetica", "bold");
-      doc.text("Rs", valueX - 10, taxContentY + 15, { align: "right" });
-      doc.text(`${cgst}`, valueX, taxContentY + 15, { align: "right" });
+      doc.text("Rs", summaryValueX - 10, summaryContentY + 25, { align: "right" });
+      doc.text(`${(parseFloat(cgst) + parseFloat(shippingtax) / 2).toFixed(2)}`, summaryValueX, summaryContentY + 25, { align: "right" });
 
       // Grand Total positioned lower for CGST+SGST
       doc.setFillColor(220, 252, 231);
-      doc.rect(taxBoxX, taxContentY + 19, taxBoxWidth, 8, "F");
+      doc.rect(summaryBoxX, summaryContentY + 29, summaryBoxWidth, 8, "F");
 
       doc.setTextColor(...primaryColor);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      doc.text("Invoice Total:", labelX, taxContentY + 24);
+      doc.text("Invoice Total:", summaryLabelX, summaryContentY + 34);
       doc.setFontSize(9);
-      doc.text("Rs", valueX - 10, taxContentY + 24, { align: "right" });
+      doc.text("Rs", summaryValueX - 10, summaryContentY + 34, { align: "right" });
       doc.text(
-        `${(grandTotal + (orderDetails.delivery || 0)).toFixed(2)}`,
-        valueX,
-        taxContentY + 24,
+        `${(orderDetails.total).toFixed(2)}`,
+        summaryValueX,
+        summaryContentY + 34,
         {
           align: "right",
         }
@@ -1002,23 +1072,23 @@ export default function Orders() {
     } else {
       // Show IGST for inter-state (Other State Codes)
       doc.setFont("helvetica", "normal");
-      doc.text("IGST:", labelX, taxContentY + 10);
+      doc.text("IGST:", summaryLabelX, summaryContentY + 20);
       doc.setFont("helvetica", "bold");
-      doc.text(`Rs ${igst}`, valueX, taxContentY + 10, { align: "right" });
+      doc.text(`Rs ${igst}`, summaryValueX, summaryContentY + 20, { align: "right" });
 
       // Grand Total positioned normally for IGST
       doc.setFillColor(220, 252, 231);
-      doc.rect(taxBoxX, taxContentY + 14, taxBoxWidth, 8, "F");
+      doc.rect(summaryBoxX, summaryContentY + 24, summaryBoxWidth, 8, "F");
 
       doc.setTextColor(...primaryColor);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
-      doc.text("Invoice Total:", labelX, taxContentY + 19);
+      doc.text("Invoice Total:", summaryLabelX, summaryContentY + 29);
       doc.setFontSize(9);
       doc.text(
-        `Rs ${(grandTotal + (orderDetails.delivery || 0)).toFixed(2)}`,
-        valueX,
-        taxContentY + 19,
+        `Rs ${(totalValue - discountAmount + (orderDetails.delivery || 0) + totalGST).toFixed(2)}`,
+        summaryValueX,
+        summaryContentY + 29,
         {
           align: "right",
         }
@@ -1287,7 +1357,7 @@ export default function Orders() {
                                 >
                                   Update Status
                                 </Button>
-                                {(order.customerId || order.customerEmail) && (
+                                {/* {(order.customerId || order.customerEmail) && (
                                   <Button
                                     variant="outline"
                                     size="sm"
@@ -1299,7 +1369,7 @@ export default function Orders() {
                                   >
                                     View Customer
                                   </Button>
-                                )}
+                                )} */}
                                 <Button
                                   variant="outline"
                                   size="sm"

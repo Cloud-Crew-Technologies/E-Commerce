@@ -36,7 +36,7 @@ export default function CustomerDetailsDialog({ open, onOpenChange, customerId }
       try {
         // Fetch customer details from the /get/:id route
         const response = await axios.get(
-          `https://saiapi.skillhiveinnovations.com/api/customers/get/${customerId._id}`
+          `https://saiapi.skillhiveinnovations.com/api/customers/get/${customerId}`
         );
         
         if (response.data && response.data.data) {

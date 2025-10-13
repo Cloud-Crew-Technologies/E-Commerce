@@ -125,7 +125,7 @@ export default function Coupons() {
     <div className=" bg-grey-50">
         <Sidebar />
       <div className="flex-1 ml-0 lg:ml-14 transition-all duration-300">
-        <Header title="Coupons" subtitle="Manage discount coupons" />
+        <Header title="Offers" subtitle="Manage discount offers" />
 
         <main className="p-4 sm:p-6 w-full max-w-screen-2xl mx-auto">
           {/* Stats Section - Full Width, responsive */}
@@ -221,7 +221,7 @@ export default function Coupons() {
               onClick={() => setIsAddDialogOpen(true)}
               className="w-full sm:w-auto px-4 py-2"
             >
-              Create Coupon
+              Create Offer
             </Button>
           </div>
 

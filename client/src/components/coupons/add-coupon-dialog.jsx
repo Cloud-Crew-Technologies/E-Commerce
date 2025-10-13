@@ -348,7 +348,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                               <span className="material-icons text-sm">
                                 tag
                               </span>
-                              Coupon Code
+                              Offer Code
                             </FormLabel>
                             <FormControl>
                               <Input
