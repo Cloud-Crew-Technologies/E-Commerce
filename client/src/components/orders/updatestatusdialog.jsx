@@ -65,45 +65,38 @@ export default function UpdateStatusDialog({
       });
       if (selectedStatus == "shipped") {
         try {
-          // First, fetch customer details to get the phone number
+          // Fetch detailed order information to get the phone number
           let customerPhone = null;
+          let customerName = order.customerName;
+          let orderID = order.orderID;
           
-          // Try to get customer ID from order data
-          const customerId = order.customerId || order.customer?._id || order.customer?.id;
+          console.log("Fetching detailed order info for WhatsApp notification:", order.orderID);
           
-          console.log("Looking for customer ID in order:", {
-            customerId: order.customerId,
-            customer: order.customer,
-            customerIdFound: customerId
-          });
-          
-          if (customerId) {
-            try {
-              const customerResponse = await axios.get(
-                `https://saiapi.skillhiveinnovations.com/api/customers/get/${customerId._id}`
-              );
-              
-              const customerData = customerResponse.data?.data || customerResponse.data;
-              customerPhone = customerData?.phone;
-              
-              console.log("Customer data fetched:", customerData);
-            } catch (customerError) {
-              console.error("Failed to fetch customer data:", customerError);
-            }
-          } else if (order.customerEmail) {
-            // Fallback: try to find customer by email if no customer ID
-            try {
-              console.log("No customer ID found, trying to fetch by email:", order.customerEmail);
-              // You might need to implement a different API endpoint for fetching by email
-              // For now, we'll log this case
-              console.warn("Customer ID not found, email-based lookup not implemented yet");
-            } catch (emailError) {
-              console.error("Failed to fetch customer by email:", emailError);
-            }
+          try {
+            const orderResponse = await axios.get(
+              `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${order.orderID}`
+            );
+            
+            const orderData = orderResponse.data?.data || orderResponse.data;
+            customerPhone = orderData?.customerPhone;
+            customerName = orderData?.customerName || order.customerName;
+            orderID = orderData?.orderID || order.orderID;
+            
+            console.log("Order data fetched for WhatsApp:", {
+              customerPhone,
+              customerName,
+              orderID,
+              fullOrderData: orderData
+            });
+          } catch (orderError) {
+            console.error("Failed to fetch order details:", orderError);
+            // Fallback to using the phone number from the order object if available
+            customerPhone = order.customerPhone;
+            console.log("Using fallback phone number from order object:", customerPhone);
           }
           
           if (!customerPhone) {
-            console.warn("No phone number found for customer:", order.customerName);
+            console.warn("No phone number found for customer:", customerName);
             toast({
               title: "Warning",
               description: "Order status updated but no phone number found for WhatsApp notification",
@@ -116,9 +109,9 @@ export default function UpdateStatusDialog({
           const message = await axios.post(
             "https://saiapi.skillhiveinnovations.com/api/whatsapp/ship",
             {
-              name: order.customerName,
+              name: customerName,
               phone: customerPhone,
-              orderID: order.orderID,
+              orderID: orderID,
             }
           );
           console.log("WhatsApp message sent successfully:", message.data);

@@ -13,7 +13,7 @@ const menuItems = [
   { path: "/grouped-products", icon: "view_list", label: "Grouped Stock" },
   { path: "/orders", icon: "shopping_cart", label: "Orders" },
   { path: "/customers", icon: "people", label: "Customers" },
-  { path: "/coupons", icon: "people", label: "Offers" },
+  { path: "/coupons", icon: "local_offer", label: "Offers" },
   { path: "/reports", icon: "assessment", label: "Reports" },
   { path: "/settings", icon: "settings", label: "Store Settings" },
 ];
