@@ -36,7 +36,7 @@ import UpdateStatusDialog from "@/components/orders/updatestatusdialog";
 // Company details (hardcoded) - Updated for Sri Sai Millets
 const COMPANY_DETAILS = {
   name: "SRI SAI MILLETS",
-  slogan: "Nature's Superfood for Modern Living",
+  slogan: "+91 9489750185",
   address: "NO 2/32, 3rd STREET, Bridge Way Colony Extension,Tiruppur",
   city: "Tiruppur, Tamil Nadu, 641602",
   country: "India",
@@ -1015,7 +1015,7 @@ export default function Orders() {
     doc.setFont("helvetica", "bold");
     doc.text("Rs", summaryValueX - 10, summaryContentY + 10, { align: "right" });
     doc.text(
-      (totalItemTotals).toFixed(2),
+      (totalValueAfterDiscount).toFixed(2),
       summaryValueX,
       summaryContentY + 10,
       { align: "right" }
@@ -1300,6 +1300,8 @@ export default function Orders() {
                       <TableRow>
                         <TableHead>Order ID</TableHead>
                         <TableHead>Customer</TableHead>
+                        <TableHead>Mail ID</TableHead>
+                        <TableHead>Phone</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Status</TableHead>
@@ -1331,6 +1333,12 @@ export default function Orders() {
                             </TableCell>
                             <TableCell className="text-grey-900">
                               {order.customerName}
+                            </TableCell>
+                            <TableCell className="text-grey-600">
+                              {order.customerEmail}
+                            </TableCell>
+                            <TableCell className="text-grey-600">
+                              {order.customerPhone}
                             </TableCell>
                             <TableCell className="font-medium">
                               ₹{order.total?.toLocaleString()}
