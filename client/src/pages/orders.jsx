@@ -31,6 +31,7 @@ import * as XLSX from "xlsx";
 import OrderDetailsDialog from "@/components/orders/vieworderdialog";
 import CustomerDetailsDialog from "@/components/orders/customerdetailsdialog";
 import UpdateStatusDialog from "@/components/orders/updatestatusdialog";
+import logo from "@/assets/SSM LOGO OG-1.png"; // Import your logo image
 // Removed API imports since we're using axios directly
 
 // Company details (hardcoded) - Updated for Sri Sai Millets
