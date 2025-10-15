@@ -422,7 +422,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
                       </>
                     ) : (
                       <div className="flex justify-between">
-                        <span>IGST (5%):</span>
+                        <span>GST (5%):</span>
                         <span>₹{calculateTax().toFixed(2)}</span>
                       </div>
                     )}
