@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { useSidebar } from "@/lib/SidebarContext";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback, useMemo, memo } from "react";
 
 const menuItems = [
   { path: "/", icon: "dashboard", label: "Dashboard" },
@@ -18,43 +18,71 @@ const menuItems = [
   { path: "/settings", icon: "settings", label: "Store Settings" },
 ];
 
+// Memoized Navigation Item Component
+const NavigationItem = memo(({ item, isActive, onNavigate }) => {
+  const handleClick = useCallback((event) => {
+    onNavigate(item.path, event);
+  }, [item.path, onNavigate]);
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`w-full text-left px-4 py-3 text-grey-700 rounded-lg cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-[1.02] flex items-center ${
+        isActive
+          ? "bg-primary-100 text-primary-700 shadow-sm"
+          : "hover:bg-primary-50 hover:text-primary-600 hover:shadow-sm"
+      }`}
+    >
+      <span className="material-icons mr-3 text-lg flex-shrink-0">
+        {item.icon}
+      </span>
+      <span className="font-medium flex-1">
+        {item.label}
+      </span>
+    </button>
+  );
+});
+
+NavigationItem.displayName = 'NavigationItem';
+
 export default function Sidebar() {
   const [location, setLocation] = useLocation();
   const { isOpen, toggleSidebar } = useSidebar();
   const { logoutMutation } = useAuth();
   const sidebarRef = useRef(null);
 
-  const handleLogout = (event) => {
+  const handleLogout = useCallback((event) => {
     event.stopPropagation();
     logoutMutation.mutate();
-  };
+  }, [logoutMutation]);
 
-  const handleNavigation = (path, event) => {
+  const handleNavigation = useCallback((path, event) => {
     event.stopPropagation();
     setLocation(path);
-  };
+  }, [setLocation]);
 
   // Handle clicking outside sidebar to close it
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        isOpen &&
-        sidebarRef.current &&
-        !sidebarRef.current.contains(event.target)
-      ) {
-        const hamburgerButton = event.target.closest("button[data-hamburger]");
-        if (!hamburgerButton) {
-          toggleSidebar();
-        }
+  const handleClickOutside = useCallback((event) => {
+    if (
+      isOpen &&
+      sidebarRef.current &&
+      !sidebarRef.current.contains(event.target)
+    ) {
+      const hamburgerButton = event.target.closest("button[data-hamburger]");
+      if (!hamburgerButton) {
+        toggleSidebar();
       }
-    };
+    }
+  }, [isOpen, toggleSidebar]);
+
+  useEffect(() => {
+    if (!isOpen) return;
 
     document.addEventListener("mousedown", handleClickOutside);
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isOpen, toggleSidebar]);
+  }, [isOpen, handleClickOutside]);
 
   return (
     <>
@@ -107,23 +135,12 @@ export default function Sidebar() {
               {menuItems.map((item) => {
                 const isActive = location === item.path;
                 return (
-                  <div key={item.path} className="w-full">
-                    <button
-                      onClick={(event) => handleNavigation(item.path, event)}
-                      className={`nav-item w-full flex items-center px-4 py-3 text-grey-700 rounded-lg cursor-pointer transition-colors ${
-                        isActive
-                          ? "bg-primary-100 text-primary-700"
-                          : "hover:bg-grey-100"
-                      }`}
-                    >
-                      <span className="material-icons mr-3 text-lg">
-                        {item.icon}
-                      </span>
-                      <span className="font-medium flex-1 text-left">
-                        {item.label}
-                      </span>
-                    </button>
-                  </div>
+                  <NavigationItem
+                    key={item.path}
+                    item={item}
+                    isActive={isActive}
+                    onNavigate={handleNavigation}
+                  />
                 );
               })}
             </div>
@@ -132,13 +149,13 @@ export default function Sidebar() {
           {/* Logout Button - Fixed at bottom */}
           <div className="flex-shrink-0 border-t border-grey-200 bg-white">
             <div className="px-4 py-3">
-              <div
-                onClick={(event) => handleLogout(event)}
-                className="flex items-center px-4 py-3 text-grey-700 rounded-lg cursor-pointer hover:bg-grey-100 transition-colors"
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center px-4 py-3 text-grey-700 rounded-lg cursor-pointer hover:bg-grey-100 transition-colors"
               >
                 <span className="material-icons mr-3 text-lg">logout</span>
                 <span className="font-medium">Logout</span>
-              </div>
+              </button>
             </div>
           </div>
         </div>
