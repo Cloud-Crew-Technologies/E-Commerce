@@ -46,7 +46,7 @@ export default function AuthPage() {
       },
     });
     axios
-      .get(`https://saiapi.skillhiveinnovations.com/api/users/${loginData.username}`)
+      .get(`https://shisecommerce.skillhiveinnovations.com/api/users/${loginData.username}`)
       .then((response) => {
         const userData = response.data.data;
         console.log("User data details:", userData); // Debug log to see exact data structure
@@ -72,7 +72,7 @@ export default function AuthPage() {
       return;
     }
     axios
-      .post("https://saiapi.skillhiveinnovations.com/api/users/create", {
+      .post("https://shisecommerce.skillhiveinnovations.com/api/users/create", {
         username: registerData.username,
         password: registerData.password,
         storeName: registerData.storeName,
@@ -86,7 +86,7 @@ export default function AuthPage() {
         alert("Registration failed. Please try again.");
       });
     axios
-      .post("https://saiapi.skillhiveinnovations.com/api/store-settings/create", {
+      .post("https://shisecommerce.skillhiveinnovations.com/api/store-settings/create", {
         storeName: registerData.storeName,
         description: "",
         address: registerData.storeaddress,

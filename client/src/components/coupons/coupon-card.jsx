@@ -14,7 +14,7 @@ export default function CouponCard({ coupon, onEdit, onDelete }) {
     const fetchProducts = async () => {
       try {
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/products/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/products/get"
         );
         
         if (response.data && response.data.success && Array.isArray(response.data.data)) {

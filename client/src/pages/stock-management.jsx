@@ -67,7 +67,7 @@ export default function StockManagement() {
     try {
       setIsLoadingTypes(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/types/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/types/get"
       );
 
       if (
@@ -97,7 +97,7 @@ export default function StockManagement() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/batch/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/batch/get"
       );
 
       const payload = response.data;
@@ -134,7 +134,7 @@ export default function StockManagement() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/categories/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
       );
       const categoryData = response.data;
       console.log(categoriesData);
@@ -342,19 +342,22 @@ export default function StockManagement() {
     const columns = [
       { header: "Batch", dataKey: "batch" },
       { header: "Product", dataKey: "name" },
-      { header: "Description", dataKey: "description" },
       { header: "Category", dataKey: "category" },
       { header: "Type", dataKey: "type" },
+      { header: "Weight/Volume", dataKey: "Weight/Volume" },
+      { header: "Total Weight/Volume", dataKey: "Total Weight/Volume" },
+      { header: "UOM", dataKey: "UOM" },
       { header: "Current Stock", dataKey: "quantity" },
       { header: "Retail Price", dataKey: "rprice" },
       { header: "Whole Price", dataKey: "wprice" },
-      { header: "Status", dataKey: "status" },
     ];
 
     const rows = filteredProducts.map((product) => ({
       batch: product.batch,
       name: product.name,
-      description: product.description,
+      "Weight/Volume": product.weightValue?.$numberDecimal || product.weightValue || product.weight || "N/A",
+      "Total Weight/Volume": (product.weightValue?.$numberDecimal || product.weightValue || product.weight || "N/A") * (product.quantity || 0),
+      UOM: product.weightUnit || "N/A",
       category: product.category,
       type: product.type,
       quantity: product.quantity + " Units",
@@ -400,9 +403,11 @@ export default function StockManagement() {
     const wsData = filteredProducts.map((product) => ({
       Batch: product.batch,
       Product: product.name,
-      Description: product.description,
       Category: product.category,
       Type: product.type,
+      "Weight/Volume (Per Unit)": product.weightValue?.$numberDecimal || product.weightValue || product.weight || "N/A",
+      "Total Weight/Volume": (product.weightValue?.$numberDecimal || product.weightValue || product.weight || "N/A") * (product.quantity || 0),
+      "UOM": product.weightUnit || "N/A",
       "Current Stock": product.quantity,
       "Retail Price": product.rprice,
       "Whole Price": product.wprice,
@@ -679,6 +684,7 @@ export default function StockManagement() {
                       <TableHead>Product</TableHead>
                       <TableHead>Category</TableHead>
                       <TableHead>Type</TableHead>
+                      <TableHead>Weight</TableHead>
                       <TableHead>Current Stock</TableHead>
                       <TableHead>Retail Price</TableHead>
                       {/* <TableHead>Wholesale Price</TableHead> */}
@@ -706,6 +712,9 @@ export default function StockManagement() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{product.type}</Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {product.weight}
                         </TableCell>
                         <TableCell className="font-medium">
                           {product.quantity} Units

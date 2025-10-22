@@ -36,6 +36,8 @@ export default function CreateBatch() {
   const [expiryDates, setExpiryDates] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editProductId, setEditProductId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
   // Step 1
   const [batch, setBatch] = useState("");
@@ -52,13 +54,17 @@ export default function CreateBatch() {
     const list = Array.isArray(products) ? products : [];
     return list
       .filter((p) => selectedMap[p._id]?.selected)
-      .map((p) => ({
-        ...p,
-        quantity: Number(selectedMap[p._id]?.qty || 0),
-        expiryDate:
-          selectedMap[p._id]?.expiryDate || computeDefaultExpiryDate(),
-      }));
-  }, [products, selectedMap]);
+      .map((p) => {
+        // Use expiry date from confirmation dialog if available, otherwise use the one from selectedMap
+        const finalExpiryDate = expiryDates[p._id] || selectedMap[p._id]?.expiryDate || computeDefaultExpiryDate();
+        
+        return {
+          ...p,
+          quantity: Number(selectedMap[p._id]?.qty || 0),
+          expiryDate: finalExpiryDate,
+        };
+      });
+  }, [products, selectedMap, expiryDates]);
 
   const totalSelected = selectedProducts.length;
   const today = new Date();
@@ -67,8 +73,9 @@ export default function CreateBatch() {
 
   useEffect(() => {
     if (step === 2) {
+      setIsLoadingProducts(true);
       axios
-        .get("https://saiapi.skillhiveinnovations.com/api/products/get")
+        .get("https://shisecommerce.skillhiveinnovations.com/api/products/get")
         .then((res) => res.data)
         .then((data) => {
           const list = Array.isArray(data?.products?.data)
@@ -93,6 +100,9 @@ export default function CreateBatch() {
         })
         .catch(() => {
           toast({ title: "Failed to load products", variant: "destructive" });
+        })
+        .finally(() => {
+          setIsLoadingProducts(false);
         });
     }
   }, [step, toast]);
@@ -136,33 +146,68 @@ export default function CreateBatch() {
       toast({ title: "Select at least one product", variant: "destructive" });
       return;
     }
+    
+    // Initialize expiry dates with current selectedMap values
+    const initialExpiryDates = {};
+    selectedProducts.forEach((p) => {
+      initialExpiryDates[p._id] = selectedMap[p._id]?.expiryDate || computeDefaultExpiryDate();
+    });
+    setExpiryDates(initialExpiryDates);
+    
     setOpenConfirm(true);
   };
 
   const postBatch = async () => {
+    setIsLoading(true);
     try {
       const payload = {
         batch,
-        products: selectedProducts.map((p) => ({
-          name: p.name,
-          productID: p.productID,
-          expiryDate: p.expiryDate,
-          description: p.description,
-          benefits: p.benefits,
-          rprice: p.rprice,
-          wprice: p.wprice,
-          quantity: p.quantity,
-          category: p.category,
-          type: p.type,
-          weight: p.weight,
-          batchID: batch,
-          isActive: p.isActive ?? true,
-          lowstock: p.lowstock,
-        })),
+        products: selectedProducts.map((p) => {
+          // Parse weight and unit if weightUnit/weightValue are missing
+          let weightUnit = p.weightUnit;
+          let weightValue = p.weightValue;
+          
+          if (!weightUnit || !weightValue) {
+            // Try to parse from weight field (e.g., "100 g", "500 ml")
+            if (p.weight && typeof p.weight === 'string') {
+              const parts = p.weight.split(' ');
+              if (parts.length >= 2) {
+                const value = parseFloat(parts[0]);
+                const unit = parts[1];
+                weightUnit = unit;
+                // Set default weightValue based on unit
+                if (unit === 'kg' || unit === 'g' || unit === 'mg') {
+                  weightValue = unit === 'kg' ? value : unit === 'g' ? value / 1000 : value / 1000000;
+                } else if (unit === 'l' || unit === 'ml') {
+                  weightValue = unit === 'l' ? value : value / 1000;
+                }
+              }
+            }
+          }
+          
+          return {
+            name: p.name,
+            productID: p.productID,
+            expiryDate: p.expiryDate,
+            description: p.description,
+            benefits: p.benefits,
+            rprice: p.rprice,
+            wprice: p.wprice,
+            quantity: p.quantity,
+            category: p.category,
+            type: p.type,
+            weight: p.weight,
+            weightUnit: weightUnit || 'kg', // Default to kg if not specified
+            weightValue: weightValue || 0, // Default to 0 if not specified
+            batchID: batch,
+            isActive: p.isActive ?? true,
+            lowstock: p.lowstock,
+          };
+        }),
       };
-
-      await axios.post("https://saiapi.skillhiveinnovations.com/api/rbatch/create", payload);
-      await axios.post("https://saiapi.skillhiveinnovations.com/api/batch/create", payload);
+      console.log(payload);
+      await axios.post("https://shisecommerce.skillhiveinnovations.com/api/rbatch/create", payload);
+      await axios.post("https://shisecommerce.skillhiveinnovations.com/api/batch/create", payload);
       toast({ title: "Stock added successfully" });
       setOpenConfirm(false);
       setStep(1);
@@ -170,7 +215,26 @@ export default function CreateBatch() {
       setSelectedMap({});
       window.location.reload();
     } catch (e) {
-      toast({ title: "Failed to add stock", variant: "destructive" });
+      // Check for duplicate key error (MongoDB E11000)
+      const errorData = e.response?.data;
+      const isDuplicateError = 
+        errorData?.code === 11000 || 
+        errorData?.message?.code === 11000 ||
+        errorData?.errmsg?.includes('E11000') ||
+        errorData?.message?.errmsg?.includes('E11000');
+      
+      if (isDuplicateError) {
+        window.alert(`Batch is already created with this ID: ${batch}`);
+        toast({ 
+          title: "Batch already exists", 
+          description: `A batch with ID "${batch}" has already been created. Please use a different batch ID.`,
+          variant: "destructive" 
+        });
+      } else {
+        toast({ title: "Failed to add stock", variant: "destructive" });
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
   const edit = (id) => {
@@ -201,8 +265,8 @@ export default function CreateBatch() {
                     placeholder="Enter batch name"
                   />
                 </div>
-                <Button onClick={handleCreateOrAddClick}>
-                  Create / Add Stocks
+                <Button onClick={handleCreateOrAddClick} disabled={isLoadingProducts}>
+                  {isLoadingProducts ? "Loading..." : "Create / Add Stocks"}
                 </Button>
               </div>
             </CardContent>
@@ -370,7 +434,9 @@ export default function CreateBatch() {
                 >
                   Cancel
                 </Button>
-                <Button onClick={postBatch}>Add Stock</Button>
+                <Button onClick={postBatch} disabled={isLoading}>
+                  {isLoading ? "Adding Stock..." : "Add Stock"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

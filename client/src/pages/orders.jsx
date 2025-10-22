@@ -91,7 +91,7 @@ export default function Orders() {
       console.log(`Fetching detailed order info for ID: ${orderID}`);
 
       const response = await axios.get(
-        `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+        `https://shisecommerce.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
       );
       console.log(`Order details for ${orderID}:`, response.data);
 
@@ -99,7 +99,7 @@ export default function Orders() {
         const orderDetails = response.data.data;
         setDetailedOrderData((prev) => ({ ...prev, [orderID]: orderDetails }));
 
-        // Fetch detailed product information for each item
+        // Only fetch product details for items that are missing specific data
         await fetchDetailedProductInfo(orderDetails);
 
         return orderDetails;
@@ -118,59 +118,70 @@ export default function Orders() {
     }
   };
 
-  // Function to fetch detailed product information
+  // Function to fetch detailed product information only when needed
   const fetchDetailedProductInfo = async (orderDetails) => {
     if (!orderDetails?.items || orderDetails.items.length === 0) return;
 
-    console.log("=== FETCHING DETAILED PRODUCT INFORMATION ===");
+    console.log("=== CHECKING FOR MISSING PRODUCT DATA ===");
     const newDetailedProductData = {};
 
     for (const item of orderDetails.items) {
       const productId = item.productID || item.productId;
       if (productId && !detailedProductData[productId]) {
-        try {
-          console.log(`Fetching detailed product info for ID: ${productId}`);
-          const productResponse = await axios.get(
-            `https://saiapi.skillhiveinnovations.com/api/products/product/${productId}`
-          );
-          console.log(`=== PRODUCT DETAILS FOR ${productId} ===`);
-          console.log("Full Product Response:", productResponse);
-
-          if (productResponse.data && productResponse.data.success) {
-            const productData = productResponse.data.data;
-            console.log("Product Name:", productData.name);
-            console.log(
-              "Retail Sales Price (rsalesprice):",
-              productData.rsalesprice
+        // Check if we need to fetch product details
+        const needsProductData = !item.rsalesprice || !item.wsalesprice || !item.tax || !item.taxValue;
+        
+        if (needsProductData) {
+          try {
+            console.log(`Fetching missing product info for ID: ${productId}`);
+            const productResponse = await axios.get(
+              `https://shisecommerce.skillhiveinnovations.com/api/products/product/${productId}`
             );
-            console.log(
-              "Wholesale Sales Price (wsalesprice):",
-              productData.wsalesprice
-            );
-            console.log("Tax Rate:", productData.tax);
-            console.log("=== END PRODUCT DETAILS ===");
+            console.log(`=== PRODUCT DETAILS FOR ${productId} ===`);
+            console.log("Full Product Response:", productResponse);
 
-            // Store the detailed product data
-            newDetailedProductData[productId] = productData;
-          } else {
+            if (productResponse.data && productResponse.data.success) {
+              const productData = productResponse.data.data;
+              console.log("Product Name:", productData.name);
+              console.log(
+                "Retail Sales Price (rsalesprice):",
+                productData.rsalesprice
+              );
+              console.log(
+                "Wholesale Sales Price (wsalesprice):",
+                productData.wsalesprice
+              );
+              console.log("Tax Rate:", productData.tax);
+              console.log("=== END PRODUCT DETAILS ===");
+
+              // Store the detailed product data
+              newDetailedProductData[productId] = productData;
+            } else {
+              console.error(
+                `Failed to fetch product details for ${productId}:`,
+                productResponse
+              );
+            }
+          } catch (error) {
             console.error(
-              `Failed to fetch product details for ${productId}:`,
-              productResponse
+              `Error fetching product details for ${productId}:`,
+              error
             );
           }
-        } catch (error) {
-          console.error(
-            `Error fetching product details for ${productId}:`,
-            error
-          );
+        } else {
+          console.log(`Product ${productId} has all required data, skipping fetch`);
         }
       }
     }
 
     // Update the detailed product data state
-    setDetailedProductData((prev) => ({ ...prev, ...newDetailedProductData }));
-    console.log("=== END FETCHING DETAILED PRODUCT INFORMATION ===");
-    console.log("Final detailed product data:", newDetailedProductData);
+    if (Object.keys(newDetailedProductData).length > 0) {
+      setDetailedProductData((prev) => ({ ...prev, ...newDetailedProductData }));
+      console.log("=== END FETCHING DETAILED PRODUCT INFORMATION ===");
+      console.log("Final detailed product data:", newDetailedProductData);
+    } else {
+      console.log("=== NO MISSING PRODUCT DATA FOUND ===");
+    }
   };
 
   // Handle customer filter from localStorage when component mounts
@@ -198,7 +209,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/orders/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -338,7 +349,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/orders/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -475,19 +486,24 @@ export default function Orders() {
     XLSX.writeFile(workbook, "Order-overview.xlsx");
   };
   const generatePDF = async (orderID) => {
-    // Fetch detailed order information if not already available
-    let orderDetails = detailedOrderData[orderID];
-    if (!orderDetails) {
-      orderDetails = await fetchDetailedOrderInfo(orderID);
+    // Show loading state
+    setLoadingOrderDetails((prev) => ({ ...prev, [orderID]: true }));
+    
+    try {
+      // Fetch detailed order information if not already available
+      let orderDetails = detailedOrderData[orderID];
       if (!orderDetails) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch order details for PDF generation",
-          variant: "destructive",
-        });
-        return;
+        console.log(`Fetching order details for PDF generation: ${orderID}`);
+        orderDetails = await fetchDetailedOrderInfo(orderID);
+        if (!orderDetails) {
+          toast({
+            title: "Error",
+            description: "Failed to fetch order details for PDF generation",
+            variant: "destructive",
+          });
+          return;
+        }
       }
-    }
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
@@ -773,19 +789,18 @@ export default function Orders() {
       const productId = item.productID || item.productId;
       const detailedProduct = detailedProductData[productId];
 
-      // Calculate pricing based on item type
+      // Calculate pricing based on item type - use order data first, fallback to product API
       const retailPrice = isFreeItem
         ? 0
-        : detailedProduct
-        ? extractDecimalValue(detailedProduct.rsalesprice) || 0
-        : extractDecimalValue(item.rsalesprice) || 0
-          0;
+        : extractDecimalValue(item.rsalesprice) || 
+          (detailedProduct ? extractDecimalValue(detailedProduct.rsalesprice) : 0) ||
+          extractDecimalValue(item.rprice) || 0;
 
       const wholesalePrice = isFreeItem
         ? 0
-        : detailedProduct
-        ? extractDecimalValue(detailedProduct.wprice) || 0
-        : extractDecimalValue(item.wprice) || 0;
+        : extractDecimalValue(item.wsalesprice) || 
+          (detailedProduct ? extractDecimalValue(detailedProduct.wsalesprice) : 0) ||
+          extractDecimalValue(item.wprice) || 0;
 
       const effectivePrice =
         isWholesaleEligible && wholesalePrice > 0
@@ -831,7 +846,8 @@ export default function Orders() {
 
       const valueAfterDiscount = itemValue - itemDiscountAmount;
 
-      const taxRate = parseInt(detailedProduct?.tax || item.tax || 0);
+      // Use tax from order data first, fallback to product API
+      const taxRate = parseInt(item.tax || detailedProduct?.tax || 0);
       const taxAmount = valueAfterDiscount * (taxRate / 100);
       const itemTotal = valueAfterDiscount + taxAmount;
 
@@ -849,56 +865,69 @@ export default function Orders() {
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "normal");
 
-      // Item name (left-aligned)
-      const truncatedName =
-        displayName.length > 15
-          ? displayName.substring(0, 12) + "..."
-          : displayName;
-      doc.text(truncatedName, 8, yPosition + 7);
+      // Item name (left-aligned) - wrapped text
+      const maxWidth = 40; // Maximum width for the name column
+      const wrappedText = doc.splitTextToSize(displayName, maxWidth);
+      
+      // Calculate the height needed for wrapped text
+      const lineHeight = 3.5; // Height per line
+      const textHeight = wrappedText.length * lineHeight;
+      
+      // Use the larger of rowHeight or textHeight for consistent table structure
+      const actualRowHeight = Math.max(rowHeight, textHeight);
+      
+      // Calculate the vertical center of the row
+      const rowCenterY = yPosition + (actualRowHeight / 2);
+      
+      // Draw the item name with proper vertical centering
+      const textStartY = rowCenterY - (textHeight / 2) + lineHeight;
+      doc.text(wrappedText, 8, textStartY);
 
+      // All other columns are positioned at the center of the row
       // Quantity (center-aligned)
-      doc.text((item.quantity || 0).toString(), 50, yPosition + 7, {
+      doc.text((item.quantity || 0).toString(), 50, rowCenterY, {
         align: "center",
       });
 
       // Retail Price (center-aligned)
-      doc.text(effectivePrice.toFixed(2), 70, yPosition + 7, {
+      doc.text(effectivePrice.toFixed(2), 70, rowCenterY, {
         align: "center",
       });
 
       // Value (center-aligned)
-      doc.text(itemValue.toFixed(2), 100, yPosition + 7, { align: "center" });
+      doc.text(itemValue.toFixed(2), 100, rowCenterY, { align: "center" });
 
       // Discount % (center-aligned)
-      doc.text(discountPercent + "%", 125, yPosition + 7, { align: "center" });
+      doc.text(discountPercent + "%", 125, rowCenterY, { align: "center" });
 
       // Value After Discount (center-aligned)
-      doc.text(valueAfterDiscount.toFixed(2), 150, yPosition + 7, {
+      doc.text(valueAfterDiscount.toFixed(2), 150, rowCenterY, {
         align: "center",
       });
 
       // Tax % (center-aligned)
-      doc.text(taxRate + "%", 180, yPosition + 7, { align: "center" });
+      doc.text(taxRate + "%", 180, rowCenterY, { align: "center" });
 
       // Total (right-aligned)
       doc.setFont("helvetica", "bold");
-      doc.text(itemTotal.toFixed(2), pageWidth - 8, yPosition + 7, {
+      doc.text(itemTotal.toFixed(2), pageWidth - 8, rowCenterY, {
         align: "right",
       });
 
-      yPosition += rowHeight;
+      // Move to next row with consistent height
+      yPosition += actualRowHeight;
     });
 
     yPosition += 3;
 
     // Calculate GST based on state code - NOW that totalTaxValue is calculated
     if (isIntraState) {
-      // Intra-state: Split tax into CGST and SGST
-      cgst = (totalTaxValue / 2).toFixed(2);
-      sgst = (totalTaxValue / 2).toFixed(2);
+      // Intra-state: Split tax into CGST and SGST (including delivery tax)
+      cgst = (totalTaxValue / 2 + parseFloat(shippingtax) / 2).toFixed(2);
+      sgst = (totalTaxValue / 2 + parseFloat(shippingtax) / 2).toFixed(2);
     } else {
       // Inter-state: Use IGST
-      igst = totalTaxValue.toFixed(2);
+      igst = (totalTaxValue + parseFloat(shippingtax)).toFixed(2);
     }
 
     // Totals Row - matching the image style
@@ -1044,13 +1073,13 @@ export default function Orders() {
       doc.text("SGST:", summaryLabelX, summaryContentY + 20);
       doc.setFont("helvetica", "bold");
       doc.text("Rs", summaryValueX - 10, summaryContentY + 20, { align: "right" });
-      doc.text(`${(parseFloat(sgst) + parseFloat(shippingtax) / 2).toFixed(2)}`, summaryValueX, summaryContentY + 20, { align: "right" });
+      doc.text(`${sgst}`, summaryValueX, summaryContentY + 20, { align: "right" });
 
       doc.setFont("helvetica", "normal");
       doc.text("CGST:", summaryLabelX, summaryContentY + 25);
       doc.setFont("helvetica", "bold");
       doc.text("Rs", summaryValueX - 10, summaryContentY + 25, { align: "right" });
-      doc.text(`${(parseFloat(cgst) + parseFloat(shippingtax) / 2).toFixed(2)}`, summaryValueX, summaryContentY + 25, { align: "right" });
+      doc.text(`${cgst}`, summaryValueX, summaryContentY + 25, { align: "right" });
 
       // Grand Total positioned lower for CGST+SGST
       doc.setFillColor(220, 252, 231);
@@ -1124,8 +1153,24 @@ export default function Orders() {
       { align: "center" }
     );
 
-    // Save the PDF
-    doc.save(`invoice-${orderID}.pdf`);
+      // Save the PDF
+      doc.save(`invoice-${orderID}.pdf`);
+      
+      toast({
+        title: "Success",
+        description: "PDF generated successfully",
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      // Clear loading state
+      setLoadingOrderDetails((prev) => ({ ...prev, [orderID]: false }));
+    }
   };
 
   return (
@@ -1386,7 +1431,7 @@ export default function Orders() {
                                   disabled={loadingOrderDetails[order.orderID]}
                                 >
                                   {loadingOrderDetails[order.orderID]
-                                    ? "Loading..."
+                                    ? "Generating PDF..."
                                     : "Generate PDF"}
                                 </Button>
                               </div>

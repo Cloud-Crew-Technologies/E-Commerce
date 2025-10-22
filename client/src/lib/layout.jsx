@@ -2,11 +2,12 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import Sidebar from "@/components/layout/sidebar";
+import Header from "@/components/layout/header";
 import { useSidebar } from "./SidebarContext";
 
 export default function Layout({ children }) {
   const { user } = useAuth();
-  const { isOpen } = useSidebar();
+  const { isOpen, isMobile } = useSidebar();
   const [location] = useLocation();
 
   // Don't show sidebar on auth page
@@ -20,10 +21,21 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-grey-50">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-1">
-        {children}
+      <Header />
+
+      {/* Main Content */}
+      <main className={`transition-all duration-300 ${
+        isMobile 
+          ? "pt-16" // Add top padding for mobile header
+          : isOpen 
+            ? "ml-72" // Desktop: margin when sidebar is open
+            : "ml-0" // Desktop: no margin when sidebar is closed
+      }`}>
+        <div className="min-h-screen">
+          {children}
+        </div>
       </main>
     </div>
   );

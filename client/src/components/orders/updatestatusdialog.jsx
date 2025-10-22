@@ -34,6 +34,7 @@ export default function UpdateStatusDialog({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const statusOptions = [
+    { value: "confirmed", label: "Confirmed", color: "status-pending" },
     { value: "ordered", label: "Ordered", color: "status-pending" },
     { value: "processing", label: "Processing", color: "status-pending" },
     { value: "shipped", label: "Shipped", color: "status-active" },
@@ -59,10 +60,75 @@ export default function UpdateStatusDialog({
     console.log("Order data for WhatsApp:", order);
     setIsUpdating(true);
     try {
-      // Update order status via API
-      await apiRequest("PUT", `/api/orders/${order._id}`, {
-        status: selectedStatus,
-      });
+      // Use FIFO endpoint for shipped status, regular endpoint for others
+      if (selectedStatus === "shipped") {
+        try {
+          await apiRequest("PUT", `/api/orders/statusbyFIFO/${order._id}`, {
+            status: selectedStatus,
+          });
+        } catch (fifoError) {
+          // Handle FIFO inventory reduction errors
+          if (fifoError.message && fifoError.message.includes("Product not found in any batch")) {
+            // Extract product names from the error response
+            let productList = "the ordered products";
+            
+            if (fifoError.errors && Array.isArray(fifoError.errors)) {
+              const outOfStockProducts = fifoError.errors
+                .filter(err => err.error === "Product not found in any batch")
+                .map(err => err.productName || err.productID);
+              
+              if (outOfStockProducts.length > 0) {
+                productList = outOfStockProducts.join(", ");
+              }
+            }
+            
+            toast({
+              title: "Insufficient Stock",
+              description: `The following products have no stock available: ${productList}. Please create a new batch with these products before shipping the order.`,
+              variant: "destructive",
+            });
+            setIsUpdating(false);
+            return; // Don't proceed with status update
+          } else if (fifoError.message && fifoError.message.includes("Failed to reduce inventory using FIFO method")) {
+            // Try to extract specific product errors from the response
+            let errorDescription = "Unable to reduce inventory. Please check product stock levels and create batches if needed.";
+            
+            if (fifoError.errors && Array.isArray(fifoError.errors)) {
+              const productErrors = fifoError.errors.map(err => {
+                return err.productName || err.productID;
+              });
+              
+              if (productErrors.length > 0) {
+                errorDescription = `Unable to reduce inventory for: ${productErrors.join(", ")}. Please check stock levels and create batches if needed.`;
+              }
+            }
+            
+            toast({
+              title: "Inventory Error",
+              description: errorDescription,
+              variant: "destructive",
+            });
+            setIsUpdating(false);
+            return; // Don't proceed with status update
+          } else if (fifoError.message && fifoError.message.includes("Batch validation failed")) {
+            toast({
+              title: "Batch Data Error",
+              description: "Some batch data is incomplete. Please update the batch information with proper weight details before shipping.",
+              variant: "destructive",
+            });
+            setIsUpdating(false);
+            return; // Don't proceed with status update
+          } else {
+            // Re-throw other errors
+            throw fifoError;
+          }
+        }
+      } else {
+        await apiRequest("PUT", `/api/orders/${order._id}`, {
+          status: selectedStatus,
+        });
+      }
+      
       if (selectedStatus == "shipped") {
         try {
           // Fetch detailed order information to get the phone number
@@ -74,7 +140,7 @@ export default function UpdateStatusDialog({
           
           try {
             const orderResponse = await axios.get(
-              `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${order.orderID}`
+              `https://shisecommerce.skillhiveinnovations.com/api/orders/orderbyID/${order.orderID}`
             );
             
             const orderData = orderResponse.data?.data || orderResponse.data;
@@ -107,7 +173,7 @@ export default function UpdateStatusDialog({
 
           // Send WhatsApp message with the fetched phone number
           const message = await axios.post(
-            "https://saiapi.skillhiveinnovations.com/api/whatsapp/ship",
+            "https://shisecommerce.skillhiveinnovations.com/api/whatsapp/ship",
             {
               name: customerName,
               phone: customerPhone,
@@ -173,7 +239,7 @@ export default function UpdateStatusDialog({
                     <strong>Customer:</strong> {order.customerName}
                   </p>
                   <p>
-                    <strong>Amount:</strong> ₹{order.total}
+                    <strong>Amount:</strong> ₹{order.total.toFixed(2)}
                   </p>
                   <p>
                     <strong>Current Status:</strong>{" "}

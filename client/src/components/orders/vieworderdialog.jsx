@@ -24,13 +24,9 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
   const [isLoading, setIsLoading] = useState(false);
   const [productTaxValues, setProductTaxValues] = useState({});
 
-  // Get shipping cost and user data from storage
-  const shippings = sessionStorage.getItem("shipping") || "80"; // Default shipping cost
-  const users = localStorage.getItem("user");
-  const userData = users ? JSON.parse(users) : null;
-  const userState = userData?.state || "";
-  const userGstStateCode = userData?.gstStateCode || "";
-  const isTamilNadu = userState === "Tamil Nadu" && userGstStateCode === "33";
+  // Get GST state code from order data
+  const orderGstStateCode = orderDetails?.gstStateCode || "";
+  const isTamilNadu = orderGstStateCode === "33";
 
   useEffect(() => {
     if (!open || !orderID) return;
@@ -39,7 +35,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       setIsLoading(true);
       try {
         const response = await axios.get(
-          `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+          `https://shisecommerce.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
         );
         if (response.data && response.data.data) {
           setOrderDetails(response.data.data);
@@ -77,29 +73,46 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
     for (const item of items) {
       const productId = item.productID;
       if (productId && !productTaxValues[productId]) {
-        try {
-          // Replace with your actual product API endpoint
-          const productResponse = await axios.get(
-            `https://saiapi.skillhiveinnovations.com/api/products/product/${productId}`
-          );
+        // Use tax value from order data first, only fetch from API if missing
+        if (item.taxValue !== undefined) {
+          taxValues[productId] = item.taxValue;
+          console.log(`Using tax value from order data for product ${productId}:`, item.taxValue);
+        } else {
+          try {
+            // Only fetch from API if tax value is missing from order data
+            console.log(`Fetching tax value from API for product ${productId}`);
+            const productResponse = await axios.get(
+              `https://shisecommerce.skillhiveinnovations.com/api/products/product/${productId}`
+            );
 
-          if (
-            productResponse.data?.success &&
-            productResponse.data.data?.taxValue !== undefined
-          ) {
-            taxValues[productId] = productResponse.data.data.taxValue;
+            if (
+              productResponse.data?.success &&
+              productResponse.data.data?.taxValue !== undefined
+            ) {
+              taxValues[productId] = productResponse.data.data.taxValue;
+            } else {
+              taxValues[productId] = 0; // Default to 0 if tax value can't be fetched
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching tax value for product ${productId}:`,
+              error
+            );
+            taxValues[productId] = 0; // Default to 0 if tax value can't be fetched
           }
-        } catch (error) {
-          console.error(
-            `Error fetching tax value for product ${productId}:`,
-            error
-          );
-          taxValues[productId] = 0; // Default to 0 if tax value can't be fetched
         }
       }
     }
 
     setProductTaxValues((prev) => ({ ...prev, ...taxValues }));
+  };
+
+  // Helper function to extract decimal values from $numberDecimal format
+  const extractDecimalValue = (value) => {
+    if (typeof value === "object" && value.$numberDecimal) {
+      return parseFloat(value.$numberDecimal);
+    }
+    return parseFloat(value) || 0;
   };
 
   // Enhanced calculation functions based on checkout logic
@@ -111,8 +124,8 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       const isFreeItem = (item.price || 0) === 0;
       if (isFreeItem) return sum; // Skip free items in subtotal
       
-      // Use sales prices if available, otherwise fallback to price
-      const salesPrice = item.rsalesprice || item.rprice || item.price || 0;
+      // Use sales prices from order data first, fallback to regular prices
+      const salesPrice = extractDecimalValue(item.rsalesprice || item.rprice || item.price || 0);
       return sum + salesPrice * (item.quantity || 0);
     }, 0);
   };
@@ -125,7 +138,8 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       const isFreeItem = (item.price || 0) === 0;
       if (isFreeItem) return sum; // Skip free items
       
-      const retailPrice = item.rprice || item.price || 0;
+      // Use retail price from order data
+      const retailPrice = extractDecimalValue(item.rprice || item.price || 0);
       return sum + retailPrice * (item.quantity || 0);
     }, 0);
   };
@@ -137,12 +151,13 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
   };
 
   const calculateDelivery = () => {
-    const subtotal = calculateSubtotal();
-    return subtotal >= 1000 ? 0 : Number(shippings || 0);
+    // Use delivery amount from order data directly
+    return extractDecimalValue(orderDetails?.delivery || 0);
   };
 
   const calculateShippingTax = () => {
-    return calculateDelivery() * (5 / 100);
+    // Use deliveryTax from order data directly
+    return extractDecimalValue(orderDetails?.deliveryTax || 0);
   };
 
   const calculateTax = () => {
@@ -156,13 +171,14 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       if (isFreeItem) return totalTax; // No tax on free items
       
       const productId = item.productID;
-      const rawTaxValue = productTaxValues[productId];
+      // Use tax value from order data first, fallback to productTaxValues
+      const rawTaxValue = item.taxValue || productTaxValues[productId];
       const taxValue = rawTaxValue?.$numberDecimal
         ? parseFloat(rawTaxValue.$numberDecimal)
         : parseFloat(rawTaxValue) || 0;
       
       // Use sales price for tax calculation
-      const salesPrice = item.rsalesprice || item.rprice || item.price || 0;
+      const salesPrice = extractDecimalValue(item.rsalesprice || item.rprice || item.price || 0);
       const itemTax = salesPrice * (item.quantity || 0) * (taxValue / 100);
       return totalTax + itemTax;
     }, 0);
@@ -191,13 +207,76 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
   };
 
   const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const discount = calculateDiscount();
-    const delivery = calculateDelivery();
-    const shippingTax = calculateShippingTax();
-    const tax = calculateTax();
-    
-    return Math.max(0, subtotal - discount) + delivery + shippingTax;
+    // Use the total from order data directly for consistency
+    return extractDecimalValue(orderDetails?.total || 0);
+  };
+
+  // Calculate the breakdown using the same logic as PDF generation
+  const calculateOrderBreakdown = () => {
+    if (!orderDetails?.items) return {
+      totalValue: 0,
+      totalValueAfterDiscount: 0,
+      totalTaxValue: 0,
+      totalItemTotals: 0,
+      discountAmount: 0
+    };
+
+    let totalValue = 0;
+    let totalValueAfterDiscount = 0;
+    let totalTaxValue = 0;
+    let totalItemTotals = 0;
+
+    // Calculate item totals using the same logic as PDF
+    orderDetails.items.forEach((item) => {
+      const isFreeItem = (item.price || 0) === 0;
+      if (isFreeItem) return; // Skip free items
+
+      const retailPrice = extractDecimalValue(item.rsalesprice || item.rprice || item.price || 0);
+      const itemValue = retailPrice * (item.quantity || 0);
+      
+      // Calculate discount for this item using the same logic as PDF
+      let itemDiscountAmount = 0;
+      if (orderDetails.appliedCoupons && orderDetails.appliedCoupons.length > 0) {
+        // Calculate total item values for proportional discount distribution
+        const totalItemValues = orderDetails.items
+          .filter((item) => (item.price || 0) > 0)
+          .reduce((sum, item) => {
+            const retailPrice = extractDecimalValue(item.rsalesprice || item.rprice || item.price || 0);
+            return sum + retailPrice * (item.quantity || 0);
+          }, 0);
+
+        if (totalItemValues > 0) {
+          const totalDiscount = orderDetails.appliedCoupons.reduce(
+            (sum, coupon) => sum + (parseInt(coupon.discount) || 0),
+            0
+          );
+          itemDiscountAmount = itemValue * (totalDiscount / 100);
+        }
+      }
+
+      const valueAfterDiscount = itemValue - itemDiscountAmount;
+      const taxRate = parseInt(item.tax || 0);
+      const taxAmount = valueAfterDiscount * (taxRate / 100);
+      const itemTotal = valueAfterDiscount + taxAmount;
+
+      totalValue += itemValue;
+      totalValueAfterDiscount += valueAfterDiscount;
+      totalTaxValue += taxAmount;
+      totalItemTotals += itemTotal;
+    });
+
+    // Calculate total discount amount using the same logic as PDF
+    const discountAmount = orderDetails.appliedCoupons?.reduce((sum, coupon) => {
+      return sum + (coupon.discountAmount || 0);
+    }, 0) || 0;
+
+    return {
+      totalValue,
+      totalValueAfterDiscount,
+      totalTaxValue,
+      totalItemTotals,
+      discountAmount
+    };
   };
 
   // Check if wholesale pricing is applied
@@ -268,8 +347,15 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
                     <TableBody>
                       {orderDetails.items.map((item, idx) => {
                         const isFreeItem = (item.price || 0) === 0;
-                        const salesPrice = item.rsalesprice || item.rprice || item.price || 0;
-                        const retailPrice = item.rprice || item.price || 0;
+                        // Use sales price from order data with proper decimal extraction
+                        const rawSalesPrice = item.rsalesprice || item.rprice || item.price || 0;
+                        const salesPrice = rawSalesPrice?.$numberDecimal 
+                          ? parseFloat(rawSalesPrice.$numberDecimal) 
+                          : parseFloat(rawSalesPrice) || 0;
+                        const rawRetailPrice = item.rprice || item.price || 0;
+                        const retailPrice = rawRetailPrice?.$numberDecimal 
+                          ? parseFloat(rawRetailPrice.$numberDecimal) 
+                          : parseFloat(rawRetailPrice) || 0;
                         const isWholesale = isWholesaleEligible() && salesPrice < retailPrice;
                         
                         return (
@@ -331,124 +417,135 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
                 <div className="border-t pt-4">
                   <h4 className="font-semibold mb-3">Order Summary</h4>
                   <div className="space-y-2 text-sm">
-                    {/* Wholesale Pricing Information */}
-                    {isWholesaleEligible() && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-green-600 font-semibold">🎉 Wholesale Pricing Applied!</span>
-                        </div>
-                        <div className="text-green-700 text-xs">
-                          You saved ₹{calculateWholesaleSavings().toFixed(2)} with wholesale pricing
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      const breakdown = calculateOrderBreakdown();
+                      const delivery = calculateDelivery();
+                      const deliveryTax = calculateShippingTax();
+                      const totalTax = breakdown.totalTaxValue + deliveryTax;
+                      
+                      return (
+                        <>
+                          {/* Wholesale Pricing Information */}
+                          {isWholesaleEligible() && (
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-green-600 font-semibold">🎉 Wholesale Pricing Applied!</span>
+                              </div>
+                              <div className="text-green-700 text-xs">
+                                You saved ₹{calculateWholesaleSavings().toFixed(2)} with wholesale pricing
+                              </div>
+                            </div>
+                          )}
 
-                    {/* Applied Discounts */}
-                    {calculateDiscount() > 0 && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-yellow-700 font-semibold">💰 Discount Applied!</span>
-                        </div>
-                        {orderDetails.appliedCoupons?.map((coupon, index) => (
-                          <div key={index} className="text-yellow-700 text-xs">
-                            {coupon.couponCode || coupon.name}: {coupon.discount || 0}% off
+                          {/* Applied Discounts */}
+                          {(breakdown.totalValue - breakdown.totalValueAfterDiscount) > 0 && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-yellow-700 font-semibold">💰 Discount Applied!</span>
+                              </div>
+                              {orderDetails.appliedCoupons?.map((coupon, index) => (
+                                <div key={index} className="text-yellow-700 text-xs">
+                                  {coupon.couponCode || coupon.name}: {coupon.discount || 0}% off
+                                </div>
+                              ))}
+                              <div className="text-yellow-700 text-xs font-semibold">
+                                Total Discount: ₹{(breakdown.totalValue - breakdown.totalValueAfterDiscount).toFixed(2)}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Product Value */}
+                          <div className="flex justify-between">
+                            <span>
+                              {isWholesaleEligible() ? "Wholesale Product Value:" : "Product Value:"}
+                            </span>
+                            <span>₹{breakdown.totalValue.toFixed(2)}</span>
                           </div>
-                        ))}
-                        <div className="text-yellow-700 text-xs font-semibold">
-                          Total Discount: ₹{calculateDiscount().toFixed(2)}
-                        </div>
-                      </div>
-                    )}
 
-                    {/* Product Value */}
-                    <div className="flex justify-between">
-                      <span>
-                        {isWholesaleEligible() ? "Wholesale Product Value:" : "Product Value:"}
-                      </span>
-                      <span>₹{calculateSubtotal().toFixed(2)}</span>
-                    </div>
+                          {/* Show original retail value if wholesale is applied */}
+                          {isWholesaleEligible() && (
+                            <div className="flex justify-between text-gray-500">
+                              <span className="line-through">Retail Value:</span>
+                              <span className="line-through">₹{calculateRetailTotal().toFixed(2)}</span>
+                            </div>
+                          )}
 
-                    {/* Show original retail value if wholesale is applied */}
-                    {isWholesaleEligible() && (
-                      <div className="flex justify-between text-gray-500">
-                        <span className="line-through">Retail Value:</span>
-                        <span className="line-through">₹{calculateRetailTotal().toFixed(2)}</span>
-                      </div>
-                    )}
+                          {/* Discount */}
+                          {(breakdown.totalValue - breakdown.totalValueAfterDiscount) > 0 && (
+                            <div className="flex justify-between text-yellow-700">
+                              <span>Discount:</span>
+                              <span>-₹{(breakdown.totalValue - breakdown.totalValueAfterDiscount).toFixed(2)}</span>
+                            </div>
+                          )}
 
-                    {/* Discount */}
-                    {calculateDiscount() > 0 && (
-                      <div className="flex justify-between text-yellow-700">
-                        <span>Discount:</span>
-                        <span>-₹{calculateDiscount().toFixed(2)}</span>
-                      </div>
-                    )}
+                          {/* Subtotal after discount */}
+                          {(breakdown.totalValue - breakdown.totalValueAfterDiscount) > 0 && (
+                            <div className="flex justify-between">
+                              <span>Subtotal:</span>
+                              <span>₹{breakdown.totalValueAfterDiscount.toFixed(2)}</span>
+                            </div>
+                          )}
 
-                    {/* Subtotal after discount */}
-                    {calculateDiscount() > 0 && (
-                      <div className="flex justify-between">
-                        <span>Subtotal:</span>
-                        <span>₹{(calculateSubtotal() - calculateDiscount()).toFixed(2)}</span>
-                      </div>
-                    )}
+                          {/* Delivery */}
+                          <div className="flex justify-between">
+                            <span>Delivery:</span>
+                            <span
+                              className={
+                                delivery === 0
+                                  ? "text-green-600 font-medium"
+                                  : ""
+                              }
+                            >
+                              {delivery === 0
+                                ? "Free"
+                                : `₹${delivery.toFixed(2)}`}
+                            </span>
+                          </div>
 
-                    {/* Delivery */}
-                    <div className="flex justify-between">
-                      <span>Delivery:</span>
-                      <span
-                        className={
-                          calculateDelivery() === 0
-                            ? "text-green-600 font-medium"
-                            : ""
-                        }
-                      >
-                        {calculateDelivery() === 0
-                          ? "Free"
-                          : `₹${calculateDelivery().toFixed(2)}`}
-                      </span>
-                    </div>
+                          {/* Tax Breakdown */}
+                          {isTamilNadu ? (
+                            <>
+                              <div className="flex justify-between">
+                                <span>CGST (2.5%):</span>
+                                <span>₹{(breakdown.totalTaxValue / 2 + deliveryTax / 2).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>SGST (2.5%):</span>
+                                <span>₹{(breakdown.totalTaxValue / 2 + deliveryTax / 2).toFixed(2)}</span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex justify-between">
+                              <span>IGST (5%):</span>
+                              <span>₹{totalTax.toFixed(2)}</span>
+                            </div>
+                          )}
 
-                    {/* Tax Breakdown */}
-                    {isTamilNadu ? (
-                      <>
-                        <div className="flex justify-between">
-                          <span>CGST (2.5%):</span>
-                          <span>₹{(calculateTax() / 2).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>SGST (2.5%):</span>
-                          <span>₹{(calculateTax() / 2).toFixed(2)}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex justify-between">
-                        <span>GST (5%):</span>
-                        <span>₹{calculateTax().toFixed(2)}</span>
-                      </div>
-                    )}
+                          {/* Free delivery message */}
+                          {delivery === 0 && (
+                            <div className="text-green-600 text-xs">
+                              🎉 Free delivery applied
+                            </div>
+                          )}
 
-                    {/* Free delivery message */}
-                    {calculateDelivery() === 0 && (
-                      <div className="text-green-600 text-xs">
-                        🎉 Free delivery on orders over ₹1000
-                      </div>
-                    )}
+                          {/* Wholesale savings message */}
+                          {isWholesaleEligible() && (
+                            <div className="text-green-600 text-xs">
+                              🎉 Wholesale pricing applied. ₹{calculateWholesaleSavings().toFixed(2)} saved
+                            </div>
+                          )}
 
-                    {/* Wholesale savings message */}
-                    {isWholesaleEligible() && (
-                      <div className="text-green-600 text-xs">
-                        🎉 Wholesale pricing applied. ₹{calculateWholesaleSavings().toFixed(2)} saved
-                      </div>
-                    )}
+                          <hr className="my-2" />
 
-                    <hr className="my-2" />
-
-                    <div className="flex justify-between font-bold text-lg">
-                      <span>Grand Total:</span>
-                      <span className="text-green-600">
-                        ₹{calculateTotal().toFixed(2)}
-                      </span>
-                    </div>
+                          <div className="flex justify-between font-bold text-lg">
+                            <span>Grand Total:</span>
+                            <span className="text-green-600">
+                              ₹{calculateTotal().toFixed(2)}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

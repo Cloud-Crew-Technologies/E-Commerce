@@ -29,6 +29,7 @@ import {
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
+import { getUOMUnits, convertWeight, convertVolume, isWeightUnit, isVolumeUnit } from "@/lib/weightUtils";
 
 export default function AddProductDialog({ open, onOpenChange }) {
   const { toast } = useToast();
@@ -42,6 +43,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
       quantity: "",
       category: "",
       weight: "",
+      weightUnit: "kg",
       isActive: true,
       rprice: "",
       wprice: "",
@@ -63,12 +65,35 @@ export default function AddProductDialog({ open, onOpenChange }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
+  // UOM units for weight and volume
+  const uomUnits = getUOMUnits();
+
+  // Function to convert weight/volume to base units for storage
+  const convertToBaseUnit = (value, unit) => {
+    if (isWeightUnit(unit)) {
+      return convertWeight(parseFloat(value) || 0, unit, 'kg');
+    } else if (isVolumeUnit(unit)) {
+      return convertVolume(parseFloat(value) || 0, unit, 'l');
+    }
+    return value; // Return as-is for unknown units
+  };
+
+  // Function to get base unit for storage
+  const getBaseUnit = (unit) => {
+    if (isWeightUnit(unit)) {
+      return 'kg';
+    } else if (isVolumeUnit(unit)) {
+      return 'l';
+    }
+    return unit; // Return as-is for unknown units
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/categories/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
         );
 
         if (
@@ -97,7 +122,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://saiapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get("https://shisecommerce.skillhiveinnovations.com/api/types/get");
 
         if (
           response.data &&
@@ -175,20 +200,26 @@ export default function AddProductDialog({ open, onOpenChange }) {
       formData.append("description", data.description);
       formData.append("category", data.category);
       formData.append("type", data.type);
-      formData.append("weight", data.weight);
+      // Convert weight/volume to base units for storage
+      const baseUnitValue = convertToBaseUnit(data.weight, data.weightUnit);
+      const baseUnit = getBaseUnit(data.weightUnit);
+      
+      formData.append("weight", data.weight+" "+data.weightUnit);
+      formData.append("weightUnit", baseUnit);
+      formData.append("weightValue", baseUnitValue.toString());
       formData.append("isActive", data.isActive);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
       formData.append("expiryDate", data.expiryDate);
       formData.append("benefits", data.benefits);
       formData.append("tax", data.tax);
-      
+
       // Calculate taxValue properly
       const rpriceNum = parseFloat(data.rprice) || 0;
       const taxNum = parseFloat(data.tax) || 0;
       const taxValue = (taxNum / 100) * rpriceNum;
       formData.append("taxValue", taxValue.toString());
-      
+
       formData.append("MRP", data.MRP);
       formData.append("lowstock", data.lowstock);
       formData.append("wsalesprice", data.wprice / (1 + salesvalue));
@@ -201,7 +232,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
       // Send FormData to backend
       const response = await axios.post(
-        "https://saiapi.skillhiveinnovations.com/api/products/create",
+        "https://shisecommerce.skillhiveinnovations.com/api/products/create",
         formData,
         {
           headers: {
@@ -282,23 +313,61 @@ export default function AddProductDialog({ open, onOpenChange }) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weight *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter Weight (e.g., 100g, 150g)"
-                        type="number"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-2">
+                <FormLabel>Weight/Volume(unit) *</FormLabel>
+                <div className="flex gap-2">
+                  <FormField
+                    control={form.control}
+                    name="weight"
+                    rules={{ required: "Weight/Volume is required" }}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input
+                            placeholder="Enter value"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="weightUnit"
+                    rules={{ required: "Unit is required" }}
+                    render={({ field }) => (
+                      <FormItem className="w-32">
+                        <FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uomUnits.map((unit) => (
+                                <SelectItem
+                                  key={unit.value}
+                                  value={unit.value}
+                                >
+                                  {unit.label} ({unit.fullLabel})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
 
             <FormField
@@ -565,6 +634,41 @@ export default function AddProductDialog({ open, onOpenChange }) {
                         <SelectItem value="18">18%</SelectItem>
                         <SelectItem value="28">28%</SelectItem>
                         <SelectItem value="4">40%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <FormField
+                control={form.control}
+                name="isActive"
+                rules={{ 
+                  validate: (value) => value !== undefined || "Product status is required"
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Status *</FormLabel>
+                    <Select 
+                      onValueChange={(value) => field.onChange(value === "true")} 
+                      value={field.value !== undefined ? field.value.toString() : ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue 
+                            placeholder="Select product status"
+                            className={
+                              field.value !== undefined ? "" : "text-muted-foreground"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="true">Active</SelectItem>
+                        <SelectItem value="false">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

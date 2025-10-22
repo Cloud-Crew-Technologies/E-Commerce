@@ -66,7 +66,7 @@ export default function Dashboard() {
     try {
       setIsLoadingg(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/customers/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/customers/get"
       );
       const data = Array.isArray(response.data)
         ? response.data
@@ -126,7 +126,7 @@ export default function Dashboard() {
     try {
       setIsLoadings(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/products/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/products/get"
       );
 
       // Ensure we set an array - handle different response structures
@@ -169,7 +169,7 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/orders/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/orders/get"
       );
 
       // Ensure we set an array - handle different response structures
@@ -194,19 +194,19 @@ export default function Dashboard() {
       const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-      // Filter orders for current month and last month
+      // Filter orders for current month and last month (excluding cancelled orders)
       const currentMonthOrders = allOrders.filter((order) => {
         const orderDate = new Date(
           order.createdAt || order.orderDate || order.dateCreated
         );
-        return orderDate >= currentMonthStart;
+        return orderDate >= currentMonthStart && order.status !== 'cancelled';
       });
 
       const lastMonthOrders = allOrders.filter((order) => {
         const orderDate = new Date(
           order.createdAt || order.orderDate || order.dateCreated
         );
-        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd;
+        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd && order.status !== 'cancelled';
       });
 
       // Calculate total revenue for both months
@@ -223,12 +223,13 @@ export default function Dashboard() {
       const currentMonthOrdersCount = currentMonthOrders.length;
       const lastMonthOrdersCount = lastMonthOrders.length;
 
-      // Calculate overall totals
-      const totalRevenue = allOrders.reduce(
+      // Calculate overall totals (excluding cancelled orders)
+      const validOrders = allOrders.filter(order => order.status !== 'cancelled');
+      const totalRevenue = validOrders.reduce(
         (acc, curr) => acc + (curr.total || 0),
         0
       );
-      const totalOrdersCount = allOrders.length;
+      const totalOrdersCount = validOrders.length;
 
       // Calculate revenue growth percentage
       let revenueGrowthPercentage = 0;
@@ -320,7 +321,9 @@ export default function Dashboard() {
     queryKey: ["/api/products", "low-stock"],
   });
 
-  const totalSum = recentOrders.reduce((acc, curr) => acc + curr.total, 0);
+  const totalSum = recentOrders
+    .filter(order => order.status !== 'cancelled')
+    .reduce((acc, curr) => acc + curr.total, 0);
 
   const getStatusBadge = (status) => {
     switch (status) {

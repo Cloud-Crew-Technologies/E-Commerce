@@ -77,7 +77,7 @@ export default function Report() {
     try {
       // Fetch products
       const productsResponse = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/products/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/products/get"
       );
       const productsData = productsResponse.data;
       setProducts(
@@ -90,7 +90,7 @@ export default function Report() {
 
       // Fetch categories
       const categoriesResponse = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/categories/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
       );
       const categoriesData = categoriesResponse.data;
       setCategories(
@@ -103,7 +103,7 @@ export default function Report() {
 
       // Fetch types
       const typesResponse = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/types/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/types/get"
       );
       const typesData = typesResponse.data;
       setTypes(
@@ -137,7 +137,7 @@ export default function Report() {
 
     setIsLoading(true);
     try {
-      let url = `https://saiapi.skillhiveinnovations.com/api/${selectedReport}/get`;
+      let url = `https://shisecommerce.skillhiveinnovations.com/api/${selectedReport}/get`;
 
       // Add date filtering for orders and customers (server-side filtering)
       if (
@@ -160,7 +160,7 @@ export default function Report() {
           try {
             // Fetch current stock data from batch endpoint
             const batchResponse = await axios.get(
-              "https://saiapi.skillhiveinnovations.com/api/batch/get"
+              "https://shisecommerce.skillhiveinnovations.com/api/batch/get"
             );
             const batchData = batchResponse.data;
 
@@ -322,6 +322,9 @@ export default function Report() {
             "Product Name": product.name,
             Category: product.category,
             Type: product.type,
+            "Weight/Volume (Per Unit)": product.weightValue?.$numberDecimal || product.weightValue || product.weight || "N/A",
+            "Total Weight/Volume": (product.weightValue?.$numberDecimal || product.weightValue || product.weight || "N/A") * (product.currentStock || 0),
+            "UOM": product.weightUnit || "N/A",
             "Produced Stock": product.producedStock || product.quantity,
             "Current Stock": product.currentStock || 0,
             "Retail Price": product.rprice,
@@ -760,6 +763,12 @@ export default function Report() {
                                       Type
                                     </th>
                                     <th className="px-4 py-2 text-left font-medium text-gray-700">
+                                      Weight/Volume
+                                    </th>
+                                    <th className="px-4 py-2 text-left font-medium text-gray-700">
+                                      UOM
+                                    </th>
+                                    <th className="px-4 py-2 text-left font-medium text-gray-700">
                                       Produced Stock
                                     </th>
                                     <th className="px-4 py-2 text-left font-medium text-gray-700">
@@ -858,6 +867,12 @@ export default function Report() {
                                           <Badge variant="outline">
                                             {product.type}
                                           </Badge>
+                                        </td>
+                                        <td className="px-4 py-2 font-mono text-sm">
+                                          {product.weightValue?.$numberDecimal || product.weightValue || product.weight || "N/A"}
+                                        </td>
+                                        <td className="px-4 py-2">
+                                          {product.weightUnit || "N/A"}
                                         </td>
                                         <td className="px-4 py-2 font-medium">
                                           {product.producedStock ||

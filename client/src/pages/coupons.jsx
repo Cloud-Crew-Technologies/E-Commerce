@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { useMutation } from "@tanstack/react-query";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import CouponCard from "@/components/coupons/coupon-card";
 import AddCouponDialog from "@/components/coupons/add-coupon-dialog";
 import EditCouponDialog from "@/components/coupons/edit-coupon";
@@ -34,7 +32,7 @@ export default function Coupons() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/coupons/getall"
+        "https://shisecommerce.skillhiveinnovations.com/api/coupons/getall"
       );
 
       const couponsData = response.data;
@@ -122,12 +120,26 @@ export default function Coupons() {
   };
 
   return (
-    <div className=" bg-grey-50">
-        <Sidebar />
-      <div className="flex-1 ml-0 lg:ml-14 transition-all duration-300">
-        <Header title="Offers" subtitle="Manage discount offers" />
+    <div className="w-full">
+      {/* Page Header */}
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900">Offers</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage your discount offers and promotional offers
+            </p>
+          </div>
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="mt-4 sm:mt-0 px-4 py-2"
+          >
+            Create Offer
+          </Button>
+        </div>
+      </div>
 
-        <main className="p-4 sm:p-6 w-full max-w-screen-2xl mx-auto">
+      <div className="px-4 sm:px-6">
           {/* Stats Section - Full Width, responsive */}
           {coupons.length > 0 && (
             <>
@@ -207,125 +219,107 @@ export default function Coupons() {
             </>
           )}
 
-          {/* Page Header and Add Button */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 mt-4 w-full gap-4">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900">
-                Offers
-              </h2>
-              <p className="text-sm sm:text-base text-gray-600 mt-1">
-                Manage your discount offers and promotional offers
-              </p>
+
+      {/* Filter Bar */}
+      <div className="w-full bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="col-span-1 md:col-span-1">
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by code or name"
+              className="w-full"
+            />
+          </div>
+          <div className="col-span-1 md:col-span-1">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-30">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="w-full">
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="expiring">Expiring soon</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="col-span-1  flex gap-2 justify-start md:justify-end">
+            <Button variant="outline" onClick={resetFilters} className="w-full md:w-auto">Clear</Button>
+          </div>
+        </div>
+        <div className="mt-2 text-xs text-gray-500">
+          Showing {filteredCoupons.length} of {coupons.length} offers
+        </div>
+      </div>
+
+      {/* Content Section: Responsive Coupon Card Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              className="h-40 sm:h-48 md:h-52 lg:h-56 w-full rounded-xl"
+            />
+          ))}
+        </div>
+      ) : filteredCoupons.length === 0 ? (
+        <div className="text-center py-8 sm:py-12 px-4 w-full">
+          <div className="max-w-md mx-auto">
+            <div className="w-22 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+                />
+              </svg>
             </div>
-            <Button
-              onClick={() => setIsAddDialogOpen(true)}
-              className="w-full sm:w-auto px-4 py-2"
-            >
-              Create Offer
+            <h3 className="text-xl font-medium text-gray-900 mb-2">
+              No offers match your filters
+            </h3>
+            <p className="text-sm text-gray-600 mb-4 sm:mb-6">
+              Try adjusting or resetting the filters.
+            </p>
+            <Button onClick={resetFilters} className="w-full sm:w-auto px-6 py-2">
+              Clear Filters
             </Button>
           </div>
-
-          {/* Filter Bar */}
-          <div className="w-full bg-white border border-gray-200 rounded-lg p-3 sm:p-4 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="col-span-1 md:col-span-1">
-                <Input
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by code or name"
-                  className="w-full"
-                />
-              </div>
-              <div className="col-span-1 md:col-span-1">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full md:w-30">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="w-full">
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="expiring">Expiring soon</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-1  flex gap-2 justify-start md:justify-end">
-                <Button variant="outline" onClick={resetFilters} className="w-full md:w-auto">Clear</Button>
-              </div>
-            </div>
-            <div className="mt-2 text-xs text-gray-500">
-              Showing {filteredCoupons.length} of {coupons.length} offers
-            </div>
-          </div>
-
-          {/* Content Section: Responsive Coupon Card Grid */}
-          {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton
-                  key={i}
-                  className="h-40 sm:h-48 md:h-52 lg:h-56 w-full rounded-xl"
-                />
-              ))}
-            </div>
-          ) : filteredCoupons.length === 0 ? (
-            <div className="text-center py-8 sm:py-12 px-4 w-full">
-              <div className="max-w-md mx-auto">
-                <div className="w-22 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-medium text-gray-900 mb-2">
-                  No offers match your filters
-                </h3>
-                <p className="text-sm text-gray-600 mb-4 sm:mb-6">
-                  Try adjusting or resetting the filters.
-                </p>
-                <Button onClick={resetFilters} className="w-full sm:w-auto px-6 py-2">
-                  Clear Filters
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full mt-4">
-              {filteredCoupons.map((coupon) => (
-                <CouponCard
-                  key={coupon._id}
-                  coupon={coupon}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Dialogs */}
-          {isAddDialogOpen && (
-            <AddCouponDialog
-              open={isAddDialogOpen}
-              onOpenChange={setIsAddDialogOpen}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full mt-4">
+          {filteredCoupons.map((coupon) => (
+            <CouponCard
+              key={coupon._id}
+              coupon={coupon}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
-          )}
+          ))}
+        </div>
+      )}
 
-          {isEditDialogOpen && (
-            <EditCouponDialog
-              open={isEditDialogOpen}
-              onOpenChange={setIsEditDialogOpen}
-              couponDataID={selectedCoupon}
-            />
-          )}
-        </main>
+        {/* Dialogs */}
+        {isAddDialogOpen && (
+          <AddCouponDialog
+            open={isAddDialogOpen}
+            onOpenChange={setIsAddDialogOpen}
+          />
+        )}
+
+        {isEditDialogOpen && (
+          <EditCouponDialog
+            open={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+            couponDataID={selectedCoupon}
+          />
+        )}
       </div>
     </div>
   );

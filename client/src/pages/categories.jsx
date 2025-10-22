@@ -28,14 +28,20 @@ import {
 
 export default function Categories() {
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [newName, setNewName] = useState("");
   const [newIsActive, setNewIsActive] = useState(true);
+  const [editName, setEditName] = useState("");
+  const [editIsActive, setEditIsActive] = useState(true);
   const { toast } = useToast();
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [filter, setFilter] = useState("");
   const [selectedFile, setSelectedFile] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
+  const [editSelectedFile, setEditSelectedFile] = useState("");
+  const [editImagePreview, setEditImagePreview] = useState(null);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -46,7 +52,7 @@ export default function Categories() {
     try {
       setIsLoadingCategories(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/categories/get"
+        "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
       );
 
       // Ensure we set an array - handle different response structures
@@ -83,7 +89,7 @@ export default function Categories() {
       formData.append('image', categoryData.image); // This matches the multer field name
       
       const response = await axios.post(
-        "https://saiapi.skillhiveinnovations.com/api/categories/createwithimage",
+        "https://shisecommerce.skillhiveinnovations.com/api/categories/createwithimage",
         formData,
         {
           headers: {
@@ -115,10 +121,56 @@ export default function Categories() {
     },
   });
 
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, categoryData }) => {
+      console.log("Updating category:", id, categoryData);
+      
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('name', categoryData.name);
+      formData.append('isActive', categoryData.isActive);
+      if (categoryData.image) {
+        formData.append('image', categoryData.image);
+      }
+      
+      const response = await axios.put(
+        `https://shisecommerce.skillhiveinnovations.com/api/categories/updatewithimage/${id}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      toast({ title: "Category updated successfully" });
+      setIsEditOpen(false);
+      setEditingCategory(null);
+      setEditName("");
+      setEditIsActive(true);
+      fetchCategories(); // Refresh the list
+      setEditSelectedFile(null);
+      setEditImagePreview(null);
+    },
+    onError: (error) => {
+      console.error("Update category error:", error);
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to update category",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id) => {
       const response = await axios.delete(
-        `https://saiapi.skillhiveinnovations.com/api/categories/delete/${id}`
+        `https://shisecommerce.skillhiveinnovations.com/api/categories/delete/${id}`
       );
       return response.data;
     },
@@ -156,6 +208,70 @@ export default function Categories() {
       isActive: newIsActive,
       image: selectedFile,
     });
+  };
+
+  const onUpdate = (e) => {
+    e.preventDefault();
+    if (!editName.trim()) {
+      toast({
+        title: "Error",
+        description: "Category name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    updateCategoryMutation.mutate({
+      id: editingCategory.id || editingCategory._id,
+      categoryData: {
+        name: editName.trim(),
+        isActive: editIsActive,
+        image: editSelectedFile,
+      },
+    });
+  };
+
+  const handleEditFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (limit to 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setEditSelectedFile(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEditImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const openEditDialog = (category) => {
+    setEditingCategory(category);
+    setEditName(category.name);
+    setEditIsActive(category.isActive);
+    setEditSelectedFile(null);
+    setEditImagePreview(null);
+    setIsEditOpen(true);
   };
 
   const filteredCategories = categories.filter((cat) =>
@@ -334,6 +450,134 @@ export default function Categories() {
             </DialogContent>
           </Dialog>
 
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center">
+                  <span className="material-icons mr-2">edit</span>
+                  Edit Category
+                </DialogTitle>
+                <DialogDescription>
+                  Update the category details below.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={onUpdate} className="space-y-4">
+                <div>
+                  <Label className="mb-1 block">Name</Label>
+                  <Input
+                    placeholder="e.g., Beverages"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </div>
+                {/* Image Upload Section */}
+                <div className="space-y-2">
+                  <label>Category Image</label>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEditFileSelect}
+                      className="mb-2"
+                    />
+
+                    {editImagePreview ? (
+                      <div className="space-y-2">
+                        <img
+                          src={editImagePreview}
+                          alt="Preview"
+                          className="max-h-40 w-full object-cover rounded"
+                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">
+                            Selected: {editSelectedFile?.name}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setEditSelectedFile(null);
+                              setEditImagePreview(null);
+                            }}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      </div>
+                    ) : editingCategory?.imageURL ? (
+                      <div className="space-y-2">
+                        <img
+                          src={editingCategory.imageURL}
+                          alt="Current"
+                          className="max-h-40 w-full object-cover rounded"
+                        />
+                        <p className="text-sm text-gray-600">
+                          Current image (select new image to replace)
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <span className="material-icons text-gray-400 text-4xl mb-2">
+                          cloud_upload
+                        </span>
+                        <p className="text-sm text-gray-600">
+                          Select an image file to upload
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          PNG, JPG up to 5MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="edit-cat-active"
+                    checked={editIsActive}
+                    onCheckedChange={(v) => setEditIsActive(Boolean(v))}
+                  />
+                  <Label htmlFor="edit-cat-active">Active</Label>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditOpen(false);
+                      setEditingCategory(null);
+                      setEditName("");
+                      setEditIsActive(true);
+                      setEditSelectedFile(null);
+                      setEditImagePreview(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-primary-500 hover:bg-primary-600"
+                    disabled={
+                      updateCategoryMutation.isPending || !editName.trim()
+                    }
+                  >
+                    {updateCategoryMutation.isPending ? (
+                      <>
+                        <span className="material-icons mr-2 animate-spin">
+                          refresh
+                        </span>
+                        Updating...
+                      </>
+                    ) : (
+                      "Update"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
           <div className="bg-white rounded-lg material-elevation-2 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-grey-900">
@@ -363,9 +607,17 @@ export default function Categories() {
                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="material-icons text-grey-500">
-                          label
-                        </span>
+                        {cat.imageURL ? (
+                          <img
+                            src={cat.imageURL}
+                            alt={cat.name}
+                            className="w-10 h-10 object-cover rounded"
+                          />
+                        ) : (
+                          <span className="material-icons text-grey-500">
+                            label
+                          </span>
+                        )}
                         <div>
                           <p className="font-medium">{cat.name}</p>
                           <p className="text-xs text-grey-500">
@@ -374,6 +626,16 @@ export default function Categories() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(cat)}
+                          className="hover:bg-blue-50 hover:border-blue-300"
+                        >
+                          <span className="material-icons text-blue-600 text-sm">
+                            edit
+                          </span>
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"

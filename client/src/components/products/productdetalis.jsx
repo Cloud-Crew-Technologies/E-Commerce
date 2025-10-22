@@ -63,7 +63,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/categories/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
         );
 
         if (
@@ -94,7 +94,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
       try {
         setIsLoadingTypes(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/types/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/types/get"
         );
 
         if (
@@ -127,7 +127,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
-          `https://saiapi.skillhiveinnovations.com/api/products/get/${productId}`
+          `https://shisecommerce.skillhiveinnovations.com/api/products/get/${productId}`
         );
 
         if (response.data && response.data.data) {
@@ -200,7 +200,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
 
       // Send FormData to backend
       const response = await axios.put(
-        `https://saiapi.skillhiveinnovations.com/api/products/update/${productId}`,
+        `https://shisecommerce.skillhiveinnovations.com/api/products/update/${productId}`,
         formData,
         {
           headers: {
@@ -237,7 +237,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
     axios.put(
-      `https://saiapi.skillhiveinnovations.com/api/products/update/${productId}`,
+      `https://shisecommerce.skillhiveinnovations.com/api/products/update/${productId}`,
       data
     );
   };
@@ -289,8 +289,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
                     <FormLabel>Weight *</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter Weight (e.g., 100g, 150g)"
-                        type="number"
+                        placeholder="Enter Weight (e.g., 100 mg, 150 g)"
                         disabled
                         {...field}
                       />
@@ -324,7 +323,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
                <FormField
                 control={form.control}
                 name="lowstock"
-                rules={{ required: "low stock is required" }}
+                
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Low Stock *</FormLabel>
@@ -333,6 +332,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
                         type="number"
                         min="0"
                         placeholder="0"
+                        disabled
                         {...field}
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))
@@ -355,6 +355,7 @@ export default function ViewProduct({ open, onOpenChange, productId }) {
                         type="number"
                         min="0"
                         placeholder="0"
+                        disabled
                         {...field}
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))

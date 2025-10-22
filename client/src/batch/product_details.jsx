@@ -50,7 +50,6 @@ export default function EditProductDialog({
       rprice: "",
       wprice: "",
       batchID: "",
-      MRP: 0,
       lowstock: 0,
     },
   });
@@ -72,7 +71,7 @@ export default function EditProductDialog({
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/categories/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
         );
 
         if (
@@ -103,7 +102,7 @@ export default function EditProductDialog({
       try {
         setIsLoadingTypes(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/types/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/types/get"
         );
 
         if (
@@ -141,7 +140,7 @@ export default function EditProductDialog({
     const fetchProduct = async () => {
       try {
         setIsLoadingProducts(true);
-        const url = `https://saiapi.skillhiveinnovations.com/api/batch/${batch}/products/${productId}`;
+        const url = `https://shisecommerce.skillhiveinnovations.com/api/batch/${batch}/products/${productId}`;
         const response = await axios.get(url);
 
         if (response.data && response.data.data) {
@@ -174,6 +173,8 @@ export default function EditProductDialog({
       categories.length > 0 &&
       types.length > 0
     ) {
+
+      
       // Reset form with product data after categories and types are loaded
       form.reset({
         name: productData.name || "",
@@ -186,7 +187,6 @@ export default function EditProductDialog({
         type: productData.type,
         isActive: productData.isActive ?? true,
         batchID: productData.batchID || "",
-        MRP: productData.MRP || 0,
         lowstock: productData.lowstock || 0,
       });
     }
@@ -229,12 +229,11 @@ export default function EditProductDialog({
       formData.append("batchID", data.batchID);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
-      formData.append("MRP", data.MRP);
       formData.append("lowstock", data.lowstock);
 
       // Send FormData to backend
       const response = await axios.put(
-        `https://saiapi.skillhiveinnovations.com/api/products/update/${productId}`,
+        `https://shisecommerce.skillhiveinnovations.com/api/products/update/${productId}`,
         formData,
         {
           headers: {
@@ -271,7 +270,7 @@ export default function EditProductDialog({
   const onSubmit = (data) => {
     updateProductMutation.mutate(data);
     axios.put(
-      `https://saiapi.skillhiveinnovations.com/api/products/update/${productId}`,
+      `https://shisecommerce.skillhiveinnovations.com/api/products/update/${productId}`,
       data
     );
   };
@@ -367,6 +366,7 @@ export default function EditProductDialog({
                         type="number"
                         min="0"
                         placeholder="0"
+                        disabled
                         {...field}
                         onChange={(e) =>
                           field.onChange(parseInt(e.target.value))
@@ -377,28 +377,7 @@ export default function EditProductDialog({
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="MRP"
-                rules={{ required: "MRP is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>MRP *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        {...field}
-                        onChange={(e) =>
-                          field.onChange(parseInt(e.target.value))
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
               <FormField
                 control={form.control}
                 name="rprice"

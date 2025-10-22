@@ -29,6 +29,7 @@ import {
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
+import { getUOMUnits, convertWeight, convertVolume, isWeightUnit, isVolumeUnit } from "@/lib/weightUtils";
 
 export default function EditProductDialog({ open, onOpenChange, productId }) {
   const { toast } = useToast();
@@ -41,6 +42,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       type: "",
       category: "",
       weight: "",
+      weightUnit: "kg",
       isActive: true,
       rprice: "",
       wprice: "",
@@ -62,12 +64,35 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
+  // UOM units for weight and volume
+  const uomUnits = getUOMUnits();
+
+  // Function to convert weight/volume to base units for storage
+  const convertToBaseUnit = (value, unit) => {
+    if (isWeightUnit(unit)) {
+      return convertWeight(parseFloat(value) || 0, unit, 'kg');
+    } else if (isVolumeUnit(unit)) {
+      return convertVolume(parseFloat(value) || 0, unit, 'l');
+    }
+    return value; // Return as-is for unknown units
+  };
+
+  // Function to get base unit for storage
+  const getBaseUnit = (unit) => {
+    if (isWeightUnit(unit)) {
+      return 'kg';
+    } else if (isVolumeUnit(unit)) {
+      return 'l';
+    }
+    return unit; // Return as-is for unknown units
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/categories/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
         );
 
         if (
@@ -97,7 +122,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://saiapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get("https://shisecommerce.skillhiveinnovations.com/api/types/get");
 
         if (
           response.data &&
@@ -129,7 +154,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
-          `https://saiapi.skillhiveinnovations.com/api/products/get/${productId}`
+          `https://shisecommerce.skillhiveinnovations.com/api/products/get/${productId}`
         );
 
         if (response.data && response.data.data) {
@@ -173,6 +198,23 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
         availableTypes: types.map((t) => t.name),
       });
 
+      // Parse weight and unit from combined string
+      let weightValue = "0";
+      let weightUnit = "kg"; // Default to kg as base unit for weight
+      
+      if (productData.weight) {
+        const weightString = productData.weight.toString();
+        const parts = weightString.split(" ");
+        if (parts.length >= 2) {
+          weightValue = parts[0];
+          weightUnit = parts[1];
+        } else if (parts.length === 1) {
+          // If no space, assume it's just the number and default to kg
+          weightValue = parts[0];
+          weightUnit = "kg";
+        }
+      }
+
       // Update form with product data
       setTimeout(() => {
         form.reset({
@@ -181,7 +223,8 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
           description: productData.description || "",
           rprice: (productData.rprice || 0).toString(),
           wprice: (productData.wprice || 0).toString(),
-          weight: (productData.weight || 0).toString(),
+          weight: weightValue,
+          weightUnit: weightUnit,
           category: productData.category || "",
           type: productData.type || "",
           isActive: productData.isActive ?? true,
@@ -252,12 +295,19 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       // ALWAYS use FormData when updating products (even without image)
       const formData = new FormData();
       const salesvalue = data.tax / 100;
+      
+      // Convert weight/volume to base units for storage
+      const baseUnitValue = convertToBaseUnit(data.weight, data.weightUnit);
+      const baseUnit = getBaseUnit(data.weightUnit);
+      
       // Append all form fields
       formData.append("name", data.name || "");
       formData.append("description", data.description);
       formData.append("category", data.category);
       formData.append("type", data.type);
-      formData.append("weight", data.weight);
+      formData.append("weight", data.weight+" "+data.weightUnit);
+      formData.append("weightUnit", baseUnit);
+      formData.append("weightValue", baseUnitValue.toString());
       formData.append("isActive", data.isActive);
       formData.append("wprice", data.wprice);
       formData.append("rprice", data.rprice);
@@ -282,7 +332,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
       // Send FormData to backend
       const response = await axios.put(
-        `https://saiapi.skillhiveinnovations.com/api/products/updatewithimage/${productId}`,
+        `https://shisecommerce.skillhiveinnovations.com/api/products/updatewithimage/${productId}`,
         formData,
         {
           headers: {
@@ -372,23 +422,58 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Weight *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Enter Weight (e.g., 100g, 150g)"
-                        type="number"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-2">
+                <FormLabel>Weight/Volume(unit) *</FormLabel>
+                <div className="flex gap-2">
+                  <FormField
+                    control={form.control}
+                    name="weight"
+                    rules={{ required: "Weight/Volume is required" }}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input
+                            placeholder="Enter value"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="weightUnit"
+                    rules={{ required: "Unit is required" }}
+                    render={({ field }) => (
+                      <FormItem className="w-32">
+                        <FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value || ""}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {uomUnits.map((unit) => (
+                                <SelectItem key={unit.value} value={unit.value}>
+                                  {unit.label} ({unit.fullLabel})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
             </div>
 
             <FormField
@@ -679,6 +764,41 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
                         <SelectItem value="18">18%</SelectItem>
                         <SelectItem value="28">28%</SelectItem>
                         <SelectItem value="40">40%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <FormField
+                control={form.control}
+                name="isActive"
+                rules={{ 
+                  validate: (value) => value !== undefined || "Product status is required"
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Status *</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === "true")}
+                      value={field.value !== undefined ? field.value.toString() : ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue
+                            placeholder="Select product status"
+                            className={
+                              field.value !== undefined ? "" : "text-muted-foreground"
+                            }
+                          />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="true">Active</SelectItem>
+                        <SelectItem value="false">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
