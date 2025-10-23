@@ -93,7 +93,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
+          "https://saiapi.skillhiveinnovations.com/api/categories/get"
         );
 
         if (
@@ -122,7 +122,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://shisecommerce.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get("https://saiapi.skillhiveinnovations.com/api/types/get");
 
         if (
           response.data &&
@@ -232,7 +232,7 @@ export default function AddProductDialog({ open, onOpenChange }) {
 
       // Send FormData to backend
       const response = await axios.post(
-        "https://shisecommerce.skillhiveinnovations.com/api/products/create",
+        "https://saiapi.skillhiveinnovations.com/api/products/create",
         formData,
         {
           headers: {
