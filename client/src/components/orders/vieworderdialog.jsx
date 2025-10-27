@@ -35,7 +35,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       setIsLoading(true);
       try {
         const response = await axios.get(
-          `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+          `https://shisecommerce.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
         );
         if (response.data && response.data.data) {
           setOrderDetails(response.data.data);
@@ -82,7 +82,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
             // Only fetch from API if tax value is missing from order data
             console.log(`Fetching tax value from API for product ${productId}`);
             const productResponse = await axios.get(
-              `https://saiapi.skillhiveinnovations.com/api/products/product/${productId}`
+              `https://shisecommerce.skillhiveinnovations.com/api/products/product/${productId}`
             );
 
             if (
@@ -187,23 +187,41 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
   };
 
   const calculateDiscount = () => {
-    // Calculate discount from applied coupons
+    // Calculate discount from applied coupons using the same logic as PDF generation
     if (!orderDetails?.appliedCoupons || orderDetails.appliedCoupons.length === 0) {
       return 0;
     }
     
-    const subtotal = calculateSubtotal();
-    return orderDetails.appliedCoupons.reduce((totalDiscount, coupon) => {
-      const discountPercent = coupon.discount || 0;
-      const discountAmount = coupon.discountAmount || 0;
+    let totalDiscount = 0;
+    
+    // Calculate discount item by item (like PDF generation)
+    orderDetails.items.forEach((item) => {
+      const isFreeItem = (item.price || 0) === 0;
+      if (isFreeItem) return; // Skip free items
       
-      // Use percentage discount if available, otherwise use fixed amount
-      if (discountPercent > 0) {
-        return totalDiscount + (subtotal * discountPercent / 100);
-      } else {
-        return totalDiscount + discountAmount;
+      const productId = item.productID;
+      const salesPrice = extractDecimalValue(item.rsalesprice || item.rprice || item.price || 0);
+      const itemValue = salesPrice * (item.quantity || 0);
+      
+      // Find applicable coupons for this specific item
+      const applicableCoupons = orderDetails.appliedCoupons.filter(coupon => {
+        return coupon.discountProduct === "Any" || coupon.discountProduct === productId;
+      });
+      
+      // Apply discounts sequentially
+      let currentItemValue = itemValue;
+      
+      for (const coupon of applicableCoupons) {
+        const couponDiscountPercent = parseFloat(coupon.discount || 0);
+        if (couponDiscountPercent > 0) {
+          const couponDiscountAmount = currentItemValue * (couponDiscountPercent / 100);
+          currentItemValue -= couponDiscountAmount;
+          totalDiscount += couponDiscountAmount;
+        }
       }
-    }, 0);
+    });
+    
+    return totalDiscount;
   };
 
   const calculateTotal = () => {
@@ -231,26 +249,28 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       const isFreeItem = (item.price || 0) === 0;
       if (isFreeItem) return; // Skip free items
 
+      const productId = item.productID;
       const retailPrice = extractDecimalValue(item.rsalesprice || item.rprice || item.price || 0);
       const itemValue = retailPrice * (item.quantity || 0);
       
       // Calculate discount for this item using the same logic as PDF
       let itemDiscountAmount = 0;
       if (orderDetails.appliedCoupons && orderDetails.appliedCoupons.length > 0) {
-        // Calculate total item values for proportional discount distribution
-        const totalItemValues = orderDetails.items
-          .filter((item) => (item.price || 0) > 0)
-          .reduce((sum, item) => {
-            const retailPrice = extractDecimalValue(item.rsalesprice || item.rprice || item.price || 0);
-            return sum + retailPrice * (item.quantity || 0);
-          }, 0);
-
-        if (totalItemValues > 0) {
-          const totalDiscount = orderDetails.appliedCoupons.reduce(
-            (sum, coupon) => sum + (parseInt(coupon.discount) || 0),
-            0
-          );
-          itemDiscountAmount = itemValue * (totalDiscount / 100);
+        // Find applicable coupons for this specific item
+        const applicableCoupons = orderDetails.appliedCoupons.filter(coupon => {
+          return coupon.discountProduct === "Any" || coupon.discountProduct === productId;
+        });
+        
+        // Apply discounts sequentially
+        let currentItemValue = itemValue;
+        
+        for (const coupon of applicableCoupons) {
+          const couponDiscountPercent = parseFloat(coupon.discount || 0);
+          if (couponDiscountPercent > 0) {
+            const couponDiscountAmount = currentItemValue * (couponDiscountPercent / 100);
+            currentItemValue -= couponDiscountAmount;
+            itemDiscountAmount += couponDiscountAmount;
+          }
         }
       }
 
@@ -266,9 +286,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
     });
 
     // Calculate total discount amount using the same logic as PDF
-    const discountAmount = orderDetails.appliedCoupons?.reduce((sum, coupon) => {
-      return sum + (coupon.discountAmount || 0);
-    }, 0) || 0;
+    const discountAmount = totalValue - totalValueAfterDiscount;
 
     return {
       totalValue,
@@ -443,11 +461,36 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="text-yellow-700 font-semibold">💰 Discount Applied!</span>
                               </div>
-                              {orderDetails.appliedCoupons?.map((coupon, index) => (
-                                <div key={index} className="text-yellow-700 text-xs">
-                                  {coupon.couponCode || coupon.name}: {coupon.discount || 0}% off
-                                </div>
-                              ))}
+                              {orderDetails.appliedCoupons?.map((coupon, index) => {
+                                // Calculate discount amount for this specific coupon
+                                let couponDiscountAmount = 0;
+                                orderDetails.items.forEach((item) => {
+                                  const isFreeItem = (item.price || 0) === 0;
+                                  if (isFreeItem) return;
+                                  
+                                  const productId = item.productID;
+                                  const salesPrice = extractDecimalValue(item.rsalesprice || item.rprice || item.price || 0);
+                                  const itemValue = salesPrice * (item.quantity || 0);
+                                  
+                                  // Check if this coupon applies to this item
+                                  if (coupon.discountProduct === "Any" || coupon.discountProduct === productId) {
+                                    const couponDiscountPercent = parseFloat(coupon.discount || 0);
+                                    if (couponDiscountPercent > 0) {
+                                      couponDiscountAmount += itemValue * (couponDiscountPercent / 100);
+                                    }
+                                  }
+                                });
+                                
+                                return (
+                                  <div key={index} className="text-yellow-700 text-xs">
+                                    {coupon.couponCode || coupon.name}: {coupon.discount || 0}% off 
+                                    {coupon.discountProduct !== "Any" && (
+                                      <span className="text-yellow-600"> (Product-specific)</span>
+                                    )}
+                                    <span className="font-semibold"> - ₹{couponDiscountAmount.toFixed(2)}</span>
+                                  </div>
+                                );
+                              })}
                               <div className="text-yellow-700 text-xs font-semibold">
                                 Total Discount: ₹{(breakdown.totalValue - breakdown.totalValueAfterDiscount).toFixed(2)}
                               </div>

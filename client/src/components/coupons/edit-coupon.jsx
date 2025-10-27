@@ -30,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// import { insertCouponSchema } from "@shared/schema";
 
 export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
   const { toast } = useToast();
@@ -44,18 +43,25 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
     const fetchProducts = async () => {
       try {
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/products/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/products/get"
         );
         console.log("Products API response:", response.data);
-        
-        if (response.data && response.data.success && Array.isArray(response.data.data)) {
+
+        if (
+          response.data &&
+          response.data.success &&
+          Array.isArray(response.data.data)
+        ) {
           setProducts(response.data.data);
         } else if (response.data && Array.isArray(response.data.products)) {
           setProducts(response.data.products);
         } else if (Array.isArray(response.data)) {
           setProducts(response.data);
         } else {
-          console.warn("Unexpected products response structure:", response.data);
+          console.warn(
+            "Unexpected products response structure:",
+            response.data
+          );
           setProducts([]);
         }
       } catch (error) {
@@ -83,6 +89,8 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
       buyProductQuantity: 0,
       getProduct: "",
       getProductQuantity: 0,
+      buyabove: 0,
+      discountProduct: "Any",
     },
   });
 
@@ -95,34 +103,36 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
       setLoading(true);
       try {
         const response = await axios.get(
-          `https://saiapi.skillhiveinnovations.com/api/coupons/get/${couponDataID}`
+          `https://shisecommerce.skillhiveinnovations.com/api/coupons/get/${couponDataID}`
         );
 
         if (response.data && response.data.data) {
           const couponData = response.data.data;
           console.log("Fetched coupon data:", couponData);
-          
+
           setOfferType(couponData.offerType || "discount");
-          
-          // Set image preview if imageUrl exists
+
           if (couponData.imageUrl) {
             setImagePreview(couponData.imageUrl);
           }
-          
+
           form.reset({
             code: couponData.code || "",
             name: couponData.name || "",
             discount: couponData.discount || 0,
             usageLimit: couponData.usageLimit || 100,
-            expiryDate: couponData.expiryDate 
+            buyabove: couponData.buyabove || 0,
+            expiryDate: couponData.expiryDate
               ? new Date(couponData.expiryDate)
               : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            isActive: couponData.isActive !== undefined ? couponData.isActive : true,
+            isActive:
+              couponData.isActive !== undefined ? couponData.isActive : true,
             offerType: couponData.offerType || "discount",
             buyProduct: couponData.buyProduct || "",
             buyProductQuantity: couponData.buyProductQuantity || 0,
             getProduct: couponData.getProduct || "",
             getProductQuantity: couponData.getProductQuantity || 0,
+            discountProduct: couponData.discountProduct || "Any",
           });
         } else {
           toast({
@@ -151,12 +161,12 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
 
   const updateCouponMutation = useMutation({
     mutationFn: async (data) => {
-      // Build FormData for multipart update; include image only if provided
       const formData = new FormData();
       formData.append("code", String(data.code || ""));
       formData.append("name", String(data.name || ""));
       formData.append("offerType", String(data.offerType || offerType));
       formData.append("isActive", String(Boolean(data.isActive)));
+
       if (data.offerType === "discount") {
         if (data.discount !== undefined && data.discount !== null) {
           formData.append("discount", String(Number(data.discount)));
@@ -164,21 +174,44 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
         if (data.usageLimit !== undefined && data.usageLimit !== null) {
           formData.append("usageLimit", String(Number(data.usageLimit)));
         }
+        if (data.buyabove !== undefined && data.buyabove !== null) {
+          formData.append("buyabove", String(Number(data.buyabove)));
+        }
+        if (data.discountProduct) {
+          formData.append("discountProduct", String(data.discountProduct));
+        }
       }
+
       if (data.offerType === "product") {
-        if (data.buyProduct) formData.append("buyProduct", String(data.buyProduct));
-        if (data.buyProductQuantity !== undefined && data.buyProductQuantity !== null) {
-          formData.append("buyProductQuantity", String(Number(data.buyProductQuantity)));
+        if (data.buyProduct)
+          formData.append("buyProduct", String(data.buyProduct));
+        if (
+          data.buyProductQuantity !== undefined &&
+          data.buyProductQuantity !== null
+        ) {
+          formData.append(
+            "buyProductQuantity",
+            String(Number(data.buyProductQuantity))
+          );
         }
-        if (data.getProduct) formData.append("getProduct", String(data.getProduct));
-        if (data.getProductQuantity !== undefined && data.getProductQuantity !== null) {
-          formData.append("getProductQuantity", String(Number(data.getProductQuantity)));
+        if (data.getProduct)
+          formData.append("getProduct", String(data.getProduct));
+        if (
+          data.getProductQuantity !== undefined &&
+          data.getProductQuantity !== null
+        ) {
+          formData.append(
+            "getProductQuantity",
+            String(Number(data.getProductQuantity))
+          );
         }
       }
+
       if (data.expiryDate) {
         const iso = new Date(data.expiryDate).toISOString();
         formData.append("expiryDate", iso);
       }
+
       if (selectedFile) {
         formData.append("image", selectedFile);
       }
@@ -228,7 +261,6 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
-        {/* Header with gradient background */}
         <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6 sm:p-8">
           <DialogHeader className="space-y-3">
             <div className="flex items-center gap-3">
@@ -261,7 +293,6 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                 onSubmit={form.handleSubmit(onSubmit)}
                 className="space-y-6"
               >
-                {/* Offer Type Selection */}
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-gray-700">
                     Select Offer Type
@@ -324,7 +355,6 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                   </RadioGroup>
                 </div>
 
-                {/* Basic Information */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
@@ -399,7 +429,6 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                   />
                 </div>
 
-                {/* Discount Offer Fields */}
                 {offerType === "discount" && (
                   <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-5 rounded-xl border border-orange-200">
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -454,11 +483,75 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={form.control}
+                        name="buyabove"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2 font-semibold">
+                              <span className="material-icons text-sm text-orange-600">
+                                shopping_cart
+                              </span>
+                              Buy Above Amount
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                className="h-12 text-lg"
+                                onChange={(e) =>
+                                  field.onChange(parseInt(e.target.value) || 0)
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="discountProduct"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2 font-semibold">
+                              <span className="material-icons text-sm text-orange-600">
+                                inventory_2
+                              </span>
+                              Apply Discount To
+                            </FormLabel>
+                            <FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value || "Any"}
+                              >
+                                <SelectTrigger className="h-12">
+                                  <SelectValue placeholder="Select product" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Any">
+                                    Any Product
+                                  </SelectItem>
+                                  {products.map((product) => (
+                                    <SelectItem
+                                      key={product._id}
+                                      value={product.productID}
+                                    >
+                                      {product.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
                 )}
 
-                {/* Product Offer Fields */}
                 {offerType === "product" && (
                   <div className="space-y-4">
                     <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border border-green-200">
@@ -599,7 +692,6 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                   </div>
                 )}
 
-                {/* Image Upload */}
                 <div className="space-y-3">
                   <Label className="flex items-center gap-2 font-semibold text-gray-700">
                     <span className="material-icons text-sm">image</span>
@@ -647,7 +739,6 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                   </div>
                 </div>
 
-                {/* Expiry Date */}
                 <FormField
                   control={form.control}
                   name="expiryDate"
@@ -679,7 +770,6 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
                   )}
                 />
 
-                {/* Action Buttons */}
                 <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t">
                   <Button
                     variant="outline"

@@ -91,7 +91,7 @@ export default function Orders() {
       console.log(`Fetching detailed order info for ID: ${orderID}`);
 
       const response = await axios.get(
-        `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+        `https://shisecommerce.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
       );
       console.log(`Order details for ${orderID}:`, response.data);
 
@@ -135,7 +135,7 @@ export default function Orders() {
           try {
             console.log(`Fetching missing product info for ID: ${productId}`);
             const productResponse = await axios.get(
-              `https://saiapi.skillhiveinnovations.com/api/products/product/${productId}`
+              `https://shisecommerce.skillhiveinnovations.com/api/products/product/${productId}`
             );
             console.log(`=== PRODUCT DETAILS FOR ${productId} ===`);
             console.log("Full Product Response:", productResponse);
@@ -209,7 +209,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/orders/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -349,7 +349,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/orders/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -813,36 +813,64 @@ export default function Orders() {
 
       const itemValue = effectivePrice * (item.quantity || 0);
 
+      console.log(`🔍 [ShopManager PDF] Processing item ${itemName}:`, {
+        productId,
+        itemValue,
+        appliedCoupons: orderDetails.appliedCoupons?.length || 0,
+        isFreeItem
+      });
+
       if (
         !isFreeItem &&
         orderDetails.appliedCoupons &&
         orderDetails.appliedCoupons.length > 0
       ) {
-        // Calculate total item values for proportional discount distribution
-        const totalItemValues = orderDetails.items
-          .filter((item) => (item.price || 0) > 0)
-          .reduce((sum, item) => {
-            const productId = item.productID || item.productId;
-            const detailedProduct = detailedProductData[productId];
-            const retailPrice = detailedProduct
-              ? extractDecimalValue(detailedProduct.rsalesprice) || 0
-              : extractDecimalValue(item.rsalesprice) ||
-                extractDecimalValue(item.price) ||
-                0;
-            return sum + retailPrice * (item.quantity || 0);
-          }, 0);
+        // Find applicable coupons for this specific item
+        const applicableCoupons = orderDetails.appliedCoupons.filter(coupon => {
+          // If coupon applies to "Any" product or this specific product
+          const applies = coupon.discountProduct === "Any" || coupon.discountProduct === productId;
+          console.log(`🔍 [ShopManager PDF] Coupon ${coupon.couponCode}:`, {
+            discountProduct: coupon.discountProduct,
+            productId,
+            applies,
+            discount: coupon.discount
+          });
+          return applies;
+        });
 
-        if (totalItemValues > 0) {
-          const totalDiscount = orderDetails.appliedCoupons.reduce(
-            (sum, coupon) => {
-              return sum + (parseInt(coupon.discount) || 0);
-            },
-            0
-          );
-          discountPercent = totalItemValues > 0 ? totalDiscount : 0;
-          itemDiscountAmount = itemValue * (totalDiscount / 100);
+        console.log(`🔍 [ShopManager PDF] Applicable coupons for ${itemName}:`, applicableCoupons);
+
+        // Apply discounts sequentially (like Cart and Checkout components)
+        let currentItemValue = itemValue;
+        let totalDiscountPercent = 0;
+
+        for (const coupon of applicableCoupons) {
+          const couponDiscountPercent = parseFloat(coupon.discount || 0);
+          if (couponDiscountPercent > 0) {
+            const couponDiscountAmount = currentItemValue * (couponDiscountPercent / 100);
+            currentItemValue -= couponDiscountAmount;
+            itemDiscountAmount += couponDiscountAmount;
+            totalDiscountPercent += couponDiscountPercent;
+            
+            console.log(`💰 [ShopManager PDF] Applied ${couponDiscountPercent}% discount:`, {
+              couponName: coupon.couponCode,
+              originalValue: currentItemValue + couponDiscountAmount,
+              discountAmount: couponDiscountAmount,
+              newValue: currentItemValue,
+              totalDiscountPercent
+            });
+          }
         }
+
+        discountPercent = totalDiscountPercent;
       }
+
+      console.log(`🔍 [ShopManager PDF] Final discount for ${itemName}:`, {
+        discountPercent,
+        itemDiscountAmount,
+        itemValue,
+        valueAfterDiscount: itemValue - itemDiscountAmount
+      });
 
       const valueAfterDiscount = itemValue - itemDiscountAmount;
 
@@ -993,11 +1021,7 @@ export default function Orders() {
     yPosition += rowHeight + 5;
 
     // Calculate discount amount first
-    const discountAmount =
-      orderDetails.appliedCoupons?.reduce((sum, coupon) => {
-        // Use 'discount' field if available, otherwise fallback to 'discountAmount'
-        return sum + (coupon.discountAmount || 0);
-      }, 0) || 0;
+    const discountAmount = totalValue - totalValueAfterDiscount;
 
     // Order Summary Section - Clean format like the image
     const summaryBoxWidth = 120;

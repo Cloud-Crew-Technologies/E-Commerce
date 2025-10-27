@@ -46,7 +46,7 @@ export default function AuthPage() {
       },
     });
     axios
-      .get(`https://saiapi.skillhiveinnovations.com/api/users/${loginData.username}`)
+      .get(`https://shisecommerce.skillhiveinnovations.com/api/users/${loginData.username}`)
       .then((response) => {
         const userData = response.data.data;
         console.log("User data details:", userData); // Debug log to see exact data structure
@@ -63,7 +63,7 @@ export default function AuthPage() {
       subject: "Welcome to Shop Manager",
       text: `Welcome to Shop Manager! Your login was successful.`,
       html: `<h1>Welcome to Shop Manager!</h1><p>Your login was successful.</p>`,
-    }).catch(error => console.error("Failed to send welcome email:", error));
+    }).catch((error) => console.error("Failed to send welcome email:", error));
   };
 
   const handleRegister = (e) => {
@@ -72,7 +72,7 @@ export default function AuthPage() {
       return;
     }
     axios
-      .post("https://saiapi.skillhiveinnovations.com/api/users/create", {
+      .post("https://shisecommerce.skillhiveinnovations.com/api/users/create", {
         username: registerData.username,
         password: registerData.password,
         storeName: registerData.storeName,
@@ -86,7 +86,7 @@ export default function AuthPage() {
         alert("Registration failed. Please try again.");
       });
     axios
-      .post("https://saiapi.skillhiveinnovations.com/api/store-settings/create", {
+      .post("https://shisecommerce.skillhiveinnovations.com/api/store-settings/create", {
         storeName: registerData.storeName,
         description: "",
         address: registerData.storeaddress,
@@ -111,9 +111,7 @@ export default function AuthPage() {
                 Admin Dashboard
               </h1>
             </div>
-            <p className="text-grey-600">
-              Access your store management system
-            </p>
+            <p className="text-grey-600">Access your store management system</p>
           </div>
 
           <Tabs defaultValue="login" className="w-full">
@@ -163,6 +161,12 @@ export default function AuthPage() {
                         }
                         required
                       />
+                      <a
+                        href="/forgot-password"
+                        className="text-sm text-primary-500 hover:underline text-right block"
+                      >
+                        Forgot password?
+                      </a>
                     </div>
                     <Button
                       type="submit"
@@ -336,7 +340,9 @@ export default function AuthPage() {
       <div className="hidden lg:flex flex-1 bg-primary-500 text-white p-8 items-center justify-center">
         <div className="text-center max-w-md">
           <span className="material-icons text-6xl mb-6 block">dashboard</span>
-          <h2 className="text-3xl font-bold mb-4">Sri Sai Millets Store Management</h2>
+          <h2 className="text-3xl font-bold mb-4">
+            Sri Sai Millets Store Management
+          </h2>
           <p className="text-primary-100 text-lg mb-6">
             Manage your products, track inventory, handle orders, and grow your
             business with our comprehensive admin dashboard.

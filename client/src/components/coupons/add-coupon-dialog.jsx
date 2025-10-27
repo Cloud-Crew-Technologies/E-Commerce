@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/form";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-// import { insertCouponSchema } from "@shared/schema";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import {
@@ -44,10 +43,9 @@ export default function AddCouponDialog({ open, onOpenChange }) {
     const fetchProducts = async () => {
       try {
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/products/get"
+          "https://shisecommerce.skillhiveinnovations.com/api/products/get"
         );
         const payload = response?.data;
-        // Support both {data: []} and {products: []} response shapes
         const list = Array.isArray(payload?.data)
           ? payload.data
           : Array.isArray(payload?.products)
@@ -67,7 +65,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
     };
     fetchProducts();
   }, [toast]);
-  console.log(products);
+
   const form = useForm({
     defaultValues: {
       code: "",
@@ -83,6 +81,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
       getProductQuantity: 0,
       buyabove: 0,
       productID: "",
+      discountProduct: "Any",
     },
   });
 
@@ -90,7 +89,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
     form.setValue("offerType", offerType);
   }, [offerType, form]);
 
-  // When products load, set a default productID if none chosen yet
   useEffect(() => {
     if (Array.isArray(products) && products.length > 0) {
       const current = form.getValues("productID");
@@ -102,17 +100,13 @@ export default function AddCouponDialog({ open, onOpenChange }) {
 
   const addCouponMutation = useMutation({
     mutationFn: async (data) => {
-      // Build FormData for multipart upload including image
       const formData = new FormData();
-      // Required/common fields
       formData.append("code", String(data.code || ""));
       formData.append("name", String(data.name || ""));
-  // include productID selected in the form (if any)
-  formData.append("productID", String(data.productID || ""));
-  //  formData.append("productID", String(products.productID || ""));
-     formData.append("offerType", String(data.offerType || offerType));
+      formData.append("productID", String(data.productID || ""));
+      formData.append("offerType", String(data.offerType || offerType));
       formData.append("isActive", String(Boolean(data.isActive)));
-      // Discount fields
+
       if (data.offerType === "discount") {
         if (data.discount !== undefined && data.discount !== null) {
           formData.append("discount", String(Number(data.discount)));
@@ -123,8 +117,11 @@ export default function AddCouponDialog({ open, onOpenChange }) {
         if (data.buyabove !== undefined && data.buyabove !== null) {
           formData.append("buyabove", String(Number(data.buyabove)));
         }
+        if (data.discountProduct) {
+          formData.append("discountProduct", String(data.discountProduct));
+        }
       }
-      // Product offer fields
+
       if (data.offerType === "product") {
         if (data.buyProduct)
           formData.append("buyProduct", String(data.buyProduct));
@@ -149,20 +146,18 @@ export default function AddCouponDialog({ open, onOpenChange }) {
           );
         }
       }
-      // Dates
+
       if (data.expiryDate) {
         const iso = new Date(data.expiryDate).toISOString();
         formData.append("expiryDate", iso);
       }
-      // Image file if present
+
       if (selectedFile) {
         formData.append("image", selectedFile);
       }
-      console.log("Submitting form data:", {
-        ...data,
-      });
+
       const response = await axios.post(
-        "https://saiapi.skillhiveinnovations.com/api/coupons/create",
+        "https://shisecommerce.skillhiveinnovations.com/api/coupons/create",
         formData,
         { withCredentials: true }
       );
@@ -189,6 +184,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
       window.location.reload();
     },
   });
+
   const onSubmit = (data) => {
     console.log("✅ Form submitted with data:", data);
     console.log("Selected file:", selectedFile);
@@ -199,7 +195,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
     console.log("❌ Form validation errors:", errors);
   };
 
-  // Add error logging
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
       console.log("Form values:", value);
@@ -211,7 +206,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file size (limit to 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -221,7 +215,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
         return;
       }
 
-      // Validate file type
       if (!file.type.startsWith("image/")) {
         toast({
           title: "Invalid file type",
@@ -233,7 +226,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
 
       setSelectedFile(file);
 
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -245,7 +237,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
-        {/* Header with gradient background */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 sm:p-8">
           <DialogHeader className="space-y-3">
             <div className="flex items-center gap-3">
@@ -269,7 +260,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
         <div className="p-6 sm:p-8">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Offer Type Selection */}
               <div className="space-y-3">
                 <Label className="text-sm font-semibold text-gray-700">
                   Select Offer Type
@@ -332,38 +322,36 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                 </RadioGroup>
               </div>
 
-              {/* Basic Information */}
               <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2 font-semibold">
+                        <span className="material-icons text-sm">tag</span>
+                        Offer Code
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., SAVE20"
+                          className="font-mono text-lg h-12"
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(e.target.value.toUpperCase())
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormField
-                        control={form.control}
-                        name="code"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex items-center gap-2 font-semibold">
-                              <span className="material-icons text-sm">
-                                tag
-                              </span>
-                              Offer Code
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="e.g., SAVE20"
-                                className="font-mono text-lg h-12"
-                                {...field}
-                                onChange={(e) =>
-                                  field.onChange(e.target.value.toUpperCase())
-                                }
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
                       <FormLabel className="flex items-center gap-2 font-semibold">
                         <span className="material-icons text-sm">label</span>
                         Offer Name
@@ -379,36 +367,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                     </FormItem>
                   )}
                 />
-                {/* <FormField
-                  control={form.control}
-                  name="productID"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2 font-semibold">
-                        <span className="material-icons text-sm">inventory_2</span>
-                        Applies To Product
-                      </FormLabel>
-                      <FormControl>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <SelectTrigger className="h-12">
-                            <SelectValue placeholder="Select product" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem
-                                key={product._id}
-                                value={product.productID}
-                              >
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                /> */}
+
                 <FormField
                   control={form.control}
                   name="isActive"
@@ -442,7 +401,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                 />
               </div>
 
-              {/* Discount Offer Fields */}
               {offerType === "discount" && (
                 <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-5 rounded-xl border border-blue-200">
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -502,6 +460,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
                       name="buyabove"
@@ -509,15 +468,15 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2 font-semibold">
                             <span className="material-icons text-sm text-blue-600">
-                              groups
+                              shopping_cart
                             </span>
-                            Buy Above
+                            Buy Above Amount
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="number"
-                              min="1"
-                              placeholder="100"
+                              min="0"
+                              placeholder="500"
                               className="h-12 text-lg"
                               {...field}
                               onChange={(e) =>
@@ -529,11 +488,47 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                         </FormItem>
                       )}
                     />
+
+                    <FormField
+                      control={form.control}
+                      name="discountProduct"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 font-semibold">
+                            <span className="material-icons text-sm text-blue-600">
+                              inventory_2
+                            </span>
+                            Apply Discount To
+                          </FormLabel>
+                          <FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value || "Any"}
+                            >
+                              <SelectTrigger className="h-12">
+                                <SelectValue placeholder="Select product" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Any">Any Product</SelectItem>
+                                {products.map((product) => (
+                                  <SelectItem
+                                    key={product._id}
+                                    value={product.productID}
+                                  >
+                                    {product.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
                 </div>
               )}
 
-              {/* Product Offer Fields */}
               {offerType === "product" && (
                 <div className="space-y-4">
                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-xl border border-green-200">
@@ -670,7 +665,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                 </div>
               )}
 
-              {/* Image Upload */}
               <div className="space-y-3">
                 <Label className="flex items-center gap-2 font-semibold text-gray-700">
                   <span className="material-icons text-sm">image</span>
@@ -718,7 +712,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                 </div>
               </div>
 
-              {/* Expiry Date */}
               <FormField
                 control={form.control}
                 name="expiryDate"
@@ -748,7 +741,6 @@ export default function AddCouponDialog({ open, onOpenChange }) {
                 )}
               />
 
-              {/* Action Buttons */}
               <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t">
                 <Button
                   type="button"
