@@ -58,7 +58,7 @@ export default function Products() {
   const fetchTypes = async () => {
     try {
       setIsLoadingTypes(true);
-      const response = await axios.get("https://shisecommerce.skillhiveinnovations.com/api/types/get");
+      const response = await axios.get("https://saiapi.skillhiveinnovations.com/api/types/get");
 
       if (
         response.data &&
@@ -87,7 +87,7 @@ export default function Products() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://shisecommerce.skillhiveinnovations.com/api/products/get"
+        "https://saiapi.skillhiveinnovations.com/api/products/get"
       );
 
       // Ensure we set an array - handle different response structures
@@ -117,7 +117,7 @@ export default function Products() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://shisecommerce.skillhiveinnovations.com/api/categories/get"
+        "https://saiapi.skillhiveinnovations.com/api/categories/get"
       );
       const categoryData = response.data;
       if (Array.isArray(categoryData)) {

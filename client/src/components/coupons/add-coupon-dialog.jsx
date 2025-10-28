@@ -43,7 +43,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
     const fetchProducts = async () => {
       try {
         const response = await axios.get(
-          "https://shisecommerce.skillhiveinnovations.com/api/products/get"
+          "https://saiapi.skillhiveinnovations.com/api/products/get"
         );
         const payload = response?.data;
         const list = Array.isArray(payload?.data)
@@ -157,7 +157,7 @@ export default function AddCouponDialog({ open, onOpenChange }) {
       }
 
       const response = await axios.post(
-        "https://shisecommerce.skillhiveinnovations.com/api/coupons/create",
+        "https://saiapi.skillhiveinnovations.com/api/coupons/create",
         formData,
         { withCredentials: true }
       );

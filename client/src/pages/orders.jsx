@@ -91,7 +91,7 @@ export default function Orders() {
       console.log(`Fetching detailed order info for ID: ${orderID}`);
 
       const response = await axios.get(
-        `https://shisecommerce.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+        `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
       );
       console.log(`Order details for ${orderID}:`, response.data);
 
@@ -135,7 +135,7 @@ export default function Orders() {
           try {
             console.log(`Fetching missing product info for ID: ${productId}`);
             const productResponse = await axios.get(
-              `https://shisecommerce.skillhiveinnovations.com/api/products/product/${productId}`
+              `https://saiapi.skillhiveinnovations.com/api/products/product/${productId}`
             );
             console.log(`=== PRODUCT DETAILS FOR ${productId} ===`);
             console.log("Full Product Response:", productResponse);
@@ -209,7 +209,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://shisecommerce.skillhiveinnovations.com/api/orders/get"
+          "https://saiapi.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -349,7 +349,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://shisecommerce.skillhiveinnovations.com/api/orders/get"
+          "https://saiapi.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
