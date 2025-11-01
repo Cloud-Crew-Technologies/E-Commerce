@@ -52,7 +52,7 @@ export default function Categories() {
     try {
       setIsLoadingCategories(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/categories/get"
+        "https://texapi.skillhiveinnovations.com/api/categories/get"
       );
 
       // Ensure we set an array - handle different response structures
@@ -89,7 +89,7 @@ export default function Categories() {
       formData.append('image', categoryData.image); // This matches the multer field name
       
       const response = await axios.post(
-        "https://saiapi.skillhiveinnovations.com/api/categories/createwithimage",
+        "https://texapi.skillhiveinnovations.com/api/categories/createwithimage",
         formData,
         {
           headers: {
@@ -134,7 +134,7 @@ export default function Categories() {
       }
       
       const response = await axios.put(
-        `https://saiapi.skillhiveinnovations.com/api/categories/updatewithimage/${id}`,
+        `https://texapi.skillhiveinnovations.com/api/categories/updatewithimage/${id}`,
         formData,
         {
           headers: {
@@ -170,7 +170,7 @@ export default function Categories() {
   const deleteCategoryMutation = useMutation({
     mutationFn: async (id) => {
       const response = await axios.delete(
-        `https://saiapi.skillhiveinnovations.com/api/categories/delete/${id}`
+        `https://texapi.skillhiveinnovations.com/api/categories/delete/${id}`
       );
       return response.data;
     },

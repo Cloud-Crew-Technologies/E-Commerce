@@ -35,7 +35,7 @@ export default function LoginPage() {
         try {
           // First, get user data
           const userResponse = await axios.get(
-            `https://saiapi.skillhiveinnovations.com/api/users/${loginData.username}`
+            `https://texapi.skillhiveinnovations.com/api/users/${loginData.username}`
           );
           const userData = userResponse.data.data;
           console.log("User data details:", userData);
@@ -52,7 +52,7 @@ export default function LoginPage() {
           if (storename) {
             try {
               const storeResponse = await axios.get(
-                `https://saiapi.skillhiveinnovations.com/api/store-settings/get/${storename}`
+                `https://texapi.skillhiveinnovations.com/api/store-settings/get/${storename}`
               );
               const storeData = storeResponse.data.data;
 
@@ -180,7 +180,7 @@ export default function LoginPage() {
         <div className="text-center max-w-md">
           <span className="material-icons text-6xl mb-6 block">dashboard</span>
           <h2 className="text-3xl font-bold mb-4">
-            Sri Sai Millets Store Management
+            Tex Store Management
           </h2>
           <p className="text-primary-100 text-lg mb-6">
             Manage your products, track inventory, handle orders, and grow your

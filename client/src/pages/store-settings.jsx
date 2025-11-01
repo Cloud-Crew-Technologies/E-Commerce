@@ -56,7 +56,7 @@ export default function StoreSettings() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        `https://saiapi.skillhiveinnovations.com/api/store-settings/get/${storename}` 
+        `https://texapi.skillhiveinnovations.com/api/store-settings/get/${storename}` 
       );
 
       if (response.data.success && response.data.data) {

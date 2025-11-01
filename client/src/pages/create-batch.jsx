@@ -75,7 +75,7 @@ export default function CreateBatch() {
     if (step === 2) {
       setIsLoadingProducts(true);
       axios
-        .get("https://saiapi.skillhiveinnovations.com/api/products/get")
+        .get("https://texapi.skillhiveinnovations.com/api/products/get")
         .then((res) => res.data)
         .then((data) => {
           const list = Array.isArray(data?.products?.data)
@@ -206,8 +206,8 @@ export default function CreateBatch() {
         }),
       };
       console.log(payload);
-      await axios.post("https://saiapi.skillhiveinnovations.com/api/rbatch/create", payload);
-      await axios.post("https://saiapi.skillhiveinnovations.com/api/batch/create", payload);
+      await axios.post("https://texapi.skillhiveinnovations.com/api/rbatch/create", payload);
+      await axios.post("https://texapi.skillhiveinnovations.com/api/batch/create", payload);
       toast({ title: "Stock added successfully" });
       setOpenConfirm(false);
       setStep(1);

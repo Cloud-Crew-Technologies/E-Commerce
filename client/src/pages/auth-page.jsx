@@ -46,7 +46,7 @@ export default function AuthPage() {
       },
     });
     axios
-      .get(`https://saiapi.skillhiveinnovations.com/api/users/${loginData.username}`)
+      .get(`https://texapi.skillhiveinnovations.com/api/users/${loginData.username}`)
       .then((response) => {
         const userData = response.data.data;
         console.log("User data details:", userData); // Debug log to see exact data structure
@@ -72,7 +72,7 @@ export default function AuthPage() {
       return;
     }
     axios
-      .post("https://saiapi.skillhiveinnovations.com/api/users/create", {
+      .post("https://texapi.skillhiveinnovations.com/api/users/create", {
         username: registerData.username,
         password: registerData.password,
         storeName: registerData.storeName,
@@ -86,7 +86,7 @@ export default function AuthPage() {
         alert("Registration failed. Please try again.");
       });
     axios
-      .post("https://saiapi.skillhiveinnovations.com/api/store-settings/create", {
+      .post("https://texapi.skillhiveinnovations.com/api/store-settings/create", {
         storeName: registerData.storeName,
         description: "",
         address: registerData.storeaddress,
@@ -341,7 +341,7 @@ export default function AuthPage() {
         <div className="text-center max-w-md">
           <span className="material-icons text-6xl mb-6 block">dashboard</span>
           <h2 className="text-3xl font-bold mb-4">
-            Sri Sai Millets Store Management
+            Tex Store Management
           </h2>
           <p className="text-primary-100 text-lg mb-6">
             Manage your products, track inventory, handle orders, and grow your

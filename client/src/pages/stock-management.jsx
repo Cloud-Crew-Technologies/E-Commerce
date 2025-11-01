@@ -67,7 +67,7 @@ export default function StockManagement() {
     try {
       setIsLoadingTypes(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/types/get"
+        "https://texapi.skillhiveinnovations.com/api/types/get"
       );
 
       if (
@@ -97,7 +97,7 @@ export default function StockManagement() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/batch/get"
+        "https://texapi.skillhiveinnovations.com/api/batch/get"
       );
 
       const payload = response.data;
@@ -134,7 +134,7 @@ export default function StockManagement() {
     try {
       setIsLoading(true);
       const response = await axios.get(
-        "https://saiapi.skillhiveinnovations.com/api/categories/get"
+        "https://texapi.skillhiveinnovations.com/api/categories/get"
       );
       const categoryData = response.data;
       console.log(categoriesData);

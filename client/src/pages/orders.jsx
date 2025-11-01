@@ -34,9 +34,9 @@ import UpdateStatusDialog from "@/components/orders/updatestatusdialog";
 import logo from "@/assets/SSM LOGO OG-1.png"; // Import your logo image
 // Removed API imports since we're using axios directly
 
-// Company details (hardcoded) - Updated for Sri Sai Millets
+// Company details (hardcoded) - Updated for Tex
 const COMPANY_DETAILS = {
-  name: "SRI SAI MILLETS",
+  name: "Tex",
   slogan: "+91 9489750185",
   address: "NO 2/32, 3rd STREET, Bridge Way Colony Extension,Tiruppur",
   city: "Tiruppur, Tamil Nadu, 641602",
@@ -91,7 +91,7 @@ export default function Orders() {
       console.log(`Fetching detailed order info for ID: ${orderID}`);
 
       const response = await axios.get(
-        `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+        `https://texapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
       );
       console.log(`Order details for ${orderID}:`, response.data);
 
@@ -135,7 +135,7 @@ export default function Orders() {
           try {
             console.log(`Fetching missing product info for ID: ${productId}`);
             const productResponse = await axios.get(
-              `https://saiapi.skillhiveinnovations.com/api/products/product/${productId}`
+              `https://texapi.skillhiveinnovations.com/api/products/product/${productId}`
             );
             console.log(`=== PRODUCT DETAILS FOR ${productId} ===`);
             console.log("Full Product Response:", productResponse);
@@ -209,7 +209,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/orders/get"
+          "https://texapi.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -349,7 +349,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/orders/get"
+          "https://texapi.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -1161,7 +1161,7 @@ export default function Orders() {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...primaryColor);
     doc.text(
-      "Thank you for choosing Sri Sai Millets!",
+      "Thank you for choosing Tex!",
       pageWidth / 2,
       footerY + 2,
       { align: "center" }

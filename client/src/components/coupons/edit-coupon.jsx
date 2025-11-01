@@ -43,7 +43,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
     const fetchProducts = async () => {
       try {
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/products/get"
+          "https://texapi.skillhiveinnovations.com/api/products/get"
         );
         console.log("Products API response:", response.data);
 
@@ -103,7 +103,7 @@ export default function EditCouponDialog({ open, onOpenChange, couponDataID }) {
       setLoading(true);
       try {
         const response = await axios.get(
-          `https://saiapi.skillhiveinnovations.com/api/coupons/get/${couponDataID}`
+          `https://texapi.skillhiveinnovations.com/api/coupons/get/${couponDataID}`
         );
 
         if (response.data && response.data.data) {

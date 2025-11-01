@@ -92,7 +92,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://saiapi.skillhiveinnovations.com/api/categories/get"
+          "https://texapi.skillhiveinnovations.com/api/categories/get"
         );
 
         if (
@@ -122,7 +122,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
     const fetchTypes = async () => {
       try {
         setIsLoadingTypes(true);
-        const response = await axios.get("https://saiapi.skillhiveinnovations.com/api/types/get");
+        const response = await axios.get("https://texapi.skillhiveinnovations.com/api/types/get");
 
         if (
           response.data &&
@@ -154,7 +154,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
       try {
         setIsLoadingProducts(true);
         const response = await axios.get(
-          `https://saiapi.skillhiveinnovations.com/api/products/get/${productId}`
+          `https://texapi.skillhiveinnovations.com/api/products/get/${productId}`
         );
 
         if (response.data && response.data.data) {
@@ -332,7 +332,7 @@ export default function EditProductDialog({ open, onOpenChange, productId }) {
 
       // Send FormData to backend
       const response = await axios.put(
-        `https://saiapi.skillhiveinnovations.com/api/products/updatewithimage/${productId}`,
+        `https://texapi.skillhiveinnovations.com/api/products/updatewithimage/${productId}`,
         formData,
         {
           headers: {
