@@ -31,12 +31,9 @@ import * as XLSX from "xlsx";
 import OrderDetailsDialog from "@/components/orders/vieworderdialog";
 import CustomerDetailsDialog from "@/components/orders/customerdetailsdialog";
 import UpdateStatusDialog from "@/components/orders/updatestatusdialog";
-import logo from "@/assets/SSM LOGO OG-1.png"; // Import your logo image
-// Removed API imports since we're using axios directly
 
-// Company details (hardcoded) - Updated for Tex
 const COMPANY_DETAILS = {
-  name: "Tex",
+  name: "SRI SAI MILLETS",
   slogan: "+91 9489750185",
   address: "NO 2/32, 3rd STREET, Bridge Way Colony Extension,Tiruppur",
   city: "Tiruppur, Tamil Nadu, 641602",
@@ -46,7 +43,6 @@ const COMPANY_DETAILS = {
   email: "srisaimilletstirupur23@gmail.com",
 };
 
-// Import company logo (you may need to adjust the path)
 import image from "@/assets/logo.png";  
 
 export default function Orders() {
@@ -91,7 +87,7 @@ export default function Orders() {
       console.log(`Fetching detailed order info for ID: ${orderID}`);
 
       const response = await axios.get(
-        `https://texapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+        `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
       );
       console.log(`Order details for ${orderID}:`, response.data);
 
@@ -135,7 +131,7 @@ export default function Orders() {
           try {
             console.log(`Fetching missing product info for ID: ${productId}`);
             const productResponse = await axios.get(
-              `https://texapi.skillhiveinnovations.com/api/products/product/${productId}`
+              `https://saiapi.skillhiveinnovations.com/api/products/product/${productId}`
             );
             console.log(`=== PRODUCT DETAILS FOR ${productId} ===`);
             console.log("Full Product Response:", productResponse);
@@ -209,7 +205,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://texapi.skillhiveinnovations.com/api/orders/get"
+          "https://saiapi.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -349,7 +345,7 @@ export default function Orders() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://texapi.skillhiveinnovations.com/api/orders/get"
+          "https://saiapi.skillhiveinnovations.com/api/orders/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -1049,7 +1045,7 @@ export default function Orders() {
     // Product Value
     doc.text("Product Value:", summaryLabelX, summaryContentY);
     doc.setFont("helvetica", "bold");
-    doc.text("Rs", summaryValueX - 10, summaryContentY, { align: "right" });
+    doc.text("Rs", summaryValueX - 20, summaryContentY, { align: "right" });
     doc.text(totalValue.toFixed(2), summaryValueX, summaryContentY, {
       align: "right",
     });
@@ -1058,7 +1054,7 @@ export default function Orders() {
     doc.setFont("helvetica", "normal");
     doc.text("Discount:", summaryLabelX, summaryContentY + 5);
     doc.setFont("helvetica", "bold");
-    doc.text("Rs", summaryValueX - 10, summaryContentY + 5, { align: "right" });
+    doc.text("Rs", summaryValueX - 20, summaryContentY + 5, { align: "right" });
     doc.text((totalValue-totalValueAfterDiscount).toFixed(2), summaryValueX, summaryContentY + 5, {
       align: "right",
     });
@@ -1067,7 +1063,7 @@ export default function Orders() {
     doc.setFont("helvetica", "normal");
     doc.text("Sub Total:", summaryLabelX, summaryContentY + 10);
     doc.setFont("helvetica", "bold");
-    doc.text("Rs", summaryValueX - 10, summaryContentY + 10, { align: "right" });
+    doc.text("Rs", summaryValueX - 20, summaryContentY + 10, { align: "right" });
     doc.text(
       (totalValueAfterDiscount).toFixed(2),
       summaryValueX,
@@ -1079,7 +1075,7 @@ export default function Orders() {
     doc.setFont("helvetica", "normal");
     doc.text("Delivery:", summaryLabelX, summaryContentY + 15);
     doc.setFont("helvetica", "bold");
-    doc.text("Rs", summaryValueX - 10, summaryContentY + 15, { align: "right" });
+    doc.text("Rs", summaryValueX - 20, summaryContentY + 15, { align: "right" });
     doc.text(
       (orderDetails.delivery || 0).toFixed(2),
       summaryValueX,
@@ -1096,13 +1092,13 @@ export default function Orders() {
       doc.setFont("helvetica", "normal");
       doc.text("SGST:", summaryLabelX, summaryContentY + 20);
       doc.setFont("helvetica", "bold");
-      doc.text("Rs", summaryValueX - 10, summaryContentY + 20, { align: "right" });
+      doc.text("Rs", summaryValueX - 20, summaryContentY + 20, { align: "right" });
       doc.text(`${sgst}`, summaryValueX, summaryContentY + 20, { align: "right" });
 
       doc.setFont("helvetica", "normal");
       doc.text("CGST:", summaryLabelX, summaryContentY + 25);
       doc.setFont("helvetica", "bold");
-      doc.text("Rs", summaryValueX - 10, summaryContentY + 25, { align: "right" });
+      doc.text("Rs", summaryValueX - 20, summaryContentY + 25, { align: "right" });
       doc.text(`${cgst}`, summaryValueX, summaryContentY + 25, { align: "right" });
 
       // Grand Total positioned lower for CGST+SGST
@@ -1114,7 +1110,7 @@ export default function Orders() {
       doc.setFontSize(8);
       doc.text("Invoice Total:", summaryLabelX, summaryContentY + 34);
       doc.setFontSize(9);
-      doc.text("Rs", summaryValueX - 10, summaryContentY + 34, { align: "right" });
+      doc.text("Rs", summaryValueX - 20, summaryContentY + 34, { align: "right" });
       doc.text(
         `${(orderDetails.total).toFixed(2)}`,
         summaryValueX,
@@ -1128,7 +1124,7 @@ export default function Orders() {
       doc.setFont("helvetica", "normal");
       doc.text("IGST:", summaryLabelX, summaryContentY + 20);
       doc.setFont("helvetica", "bold");
-      doc.text(`Rs ${igst}`, summaryValueX, summaryContentY + 20, { align: "right" });
+      doc.text(`Rs ${igst}`, summaryValueX-20, summaryContentY + 20, { align: "right" });
 
       // Grand Total positioned normally for IGST
       doc.setFillColor(220, 252, 231);
@@ -1141,7 +1137,7 @@ export default function Orders() {
       doc.setFontSize(9);
       doc.text(
         `Rs ${(totalValue - discountAmount + (orderDetails.delivery || 0) + totalGST).toFixed(2)}`,
-        summaryValueX,
+        summaryValueX-20,
         summaryContentY + 29,
         {
           align: "right",

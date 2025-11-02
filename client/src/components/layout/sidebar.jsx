@@ -222,7 +222,7 @@ export default function Sidebar() {
                 </span>
               </div>
               <div>
-                <h1 className="text-lg font-bold">Tex</h1>
+                <h1 className="text-lg font-bold">Sri Sai Millets</h1>{" "}
                 <p className="text-xs text-blue-100">Dashboard</p>
               </div>
             </div>

@@ -35,7 +35,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
       setIsLoading(true);
       try {
         const response = await axios.get(
-          `https://texapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
+          `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${orderID}`
         );
         if (response.data && response.data.data) {
           setOrderDetails(response.data.data);
@@ -82,7 +82,7 @@ export default function OrderDetailsDialog({ open, onOpenChange, orderID }) {
             // Only fetch from API if tax value is missing from order data
             console.log(`Fetching tax value from API for product ${productId}`);
             const productResponse = await axios.get(
-              `https://texapi.skillhiveinnovations.com/api/products/product/${productId}`
+              `https://saiapi.skillhiveinnovations.com/api/products/product/${productId}`
             );
 
             if (

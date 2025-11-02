@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 
-const API_BASE = "https://texapi.skillhiveinnovations.com";
+const API_BASE = "https://saiapi.skillhiveinnovations.com";
 
 export async function throwIfResNotOk(res) {
   if (!res.ok) {

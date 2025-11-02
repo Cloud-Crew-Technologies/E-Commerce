@@ -42,7 +42,7 @@ export default function GroupedProducts() {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "https://texapi.skillhiveinnovations.com/api/batch/get"
+          "https://saiapi.skillhiveinnovations.com/api/batch/get"
         );
         const data = Array.isArray(response.data)
           ? response.data
@@ -64,7 +64,7 @@ export default function GroupedProducts() {
       try {
         setIsLoadingTypes(true);
         const response = await axios.get(
-          "https://texapi.skillhiveinnovations.com/api/types/get"
+          "https://saiapi.skillhiveinnovations.com/api/types/get"
         );
         if (
           response.data &&
@@ -94,7 +94,7 @@ export default function GroupedProducts() {
       try {
         setIsLoadingCategories(true);
         const response = await axios.get(
-          "https://texapi.skillhiveinnovations.com/api/categories/get"
+          "https://saiapi.skillhiveinnovations.com/api/categories/get"
         );
         const categoryData = response.data;
         if (Array.isArray(categoryData)) {

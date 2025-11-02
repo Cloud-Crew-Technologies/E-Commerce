@@ -140,7 +140,7 @@ export default function UpdateStatusDialog({
           
           try {
             const orderResponse = await axios.get(
-              `https://texapi.skillhiveinnovations.com/api/orders/orderbyID/${order.orderID}`
+              `https://saiapi.skillhiveinnovations.com/api/orders/orderbyID/${order.orderID}`
             );
             
             const orderData = orderResponse.data?.data || orderResponse.data;
@@ -173,7 +173,7 @@ export default function UpdateStatusDialog({
 
           // Send WhatsApp message with the fetched phone number
           const message = await axios.post(
-            "https://texapi.skillhiveinnovations.com/api/whatsapp/ship",
+            "https://saiapi.skillhiveinnovations.com/api/whatsapp/ship",
             {
               name: customerName,
               phone: customerPhone,
